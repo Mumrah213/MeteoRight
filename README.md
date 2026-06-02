@@ -1,14 +1,14 @@
 # MeteoRight
 
-A local weather analysis laboratory built on Open-Meteo.
+A small weather analysis laboratory built on Open-Meteo.
 
 MeteoRight helps you ask a weather question, pull historical forecasts and
-observations into local files, and get to an analysis figure quickly. It is
-focused on forecast evolution, lead-time degradation, grid verification, event
+observations into local files, and get to analyzing quickly. It is
+focused on forecast evolution, lead-time degradation, grid verification and interpolation, event
 skill, and model comparison.
 
 It is not a forecasting model or a general weather API wrapper. It is a
-practical workspace for investigating how forecasts behaved after the fact.
+practical workspace for investigating how forecast accuracy depends on lead time, using Open Meteo's open API.
 
 ## Why This Exists
 
@@ -24,7 +24,7 @@ Open-Meteo makes the raw forecast and observation data accessible. This project
 turns that access into local analysis tables, verification metrics, and curated
 figures that make iteration fast.
 
-The goal is simple: ask a weather question, get to a plot quickly.
+The goal is simple: ask a weather question, get to a plot with verified data quickly.
 
 ## Showcase
 
@@ -63,7 +63,7 @@ windows.
 
 MeteoRight works with the public Open-Meteo APIs by default. That is the easiest
 way to try the project: no local backend and no API key are required for
-non-commercial use.
+non-commercial use. This method is however, strongly rate-limited.
 
 For larger investigations, the fast path is a local Open-Meteo backend. The
 upstream server is open source at
@@ -278,9 +278,6 @@ The key invariant is forecast provenance:
 forecast_issue_time + forecast_target_time + model + location + variable
 ```
 
-Keeping issue time separate from target time is what makes forecast evolution
-and lead-time analysis possible.
-
 ## Future Directions
 
 - More polished forecast-evolution investigations.
@@ -288,43 +285,6 @@ and lead-time analysis possible.
 - Probabilistic and ensemble-style verification.
 - Cleaner local dashboards over the same analysis stores.
 
-## Contributing
-
-Contributions are welcome when they make weather investigation faster, clearer,
-or more reproducible.
-
-Useful contributions include new investigation examples, clearer figures,
-additional verification metrics, and small setup or data-loading improvements.
-
-Please keep the project practical and analysis-focused.
-
-## Testing
-
-GitHub Actions runs a deterministic smoke suite that covers imports, CLI parsing,
-metrics, event verification, location safety, dataset verification, and the
-end-to-end verifier.
-
-Run the same style locally with:
-
-```bash
-MPLCONFIGDIR=/tmp/matplotlib python -m pytest \
-  tests/test_import.py tests/test_cli.py tests/test_models.py tests/test_normalize.py \
-  tests/test_io.py tests/test_metrics.py tests/test_aggregations.py tests/test_confusion.py \
-  tests/test_skill_scores.py tests/test_location_invariants.py \
-  tests/test_datasets/test_build_verification.py tests/test_e2e.py
-```
-
-Run the full non-network suite with:
-
-```bash
-MPLCONFIGDIR=/tmp/matplotlib python -m pytest tests/
-```
-
-Live Open-Meteo tests are opt-in:
-
-```bash
-METEORIGHT_RUN_NETWORK_TESTS=1 python -m pytest tests/test_integration.py
-```
 
 ## Data Attribution
 
