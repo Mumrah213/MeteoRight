@@ -28,25 +28,27 @@ The goal is simple: ask a weather question, get to a plot with verified data qui
 
 ## Showcase
 
-The `showcase/` folder contains the curated figures intended for public display.
-They are deliberately selected outputs, not a dump of every generated plot.
+The `showcase/` folder contains the curated figures to showcase what can be achieved by a single CLI command.
 
+A significant feature of MeteoRight is the grid interpolation, which is a necessity due to a mismatch between the forecast grid and the observation grid
+![Interpolation effect on wind verification](showcase/grid_interpolation_schematic.png)
+Since most available observations are on land, whereas forecasts are everywhere, the interpolation
+can have significant effects on coastal areas
+![Interpolation effect on wind verification](showcase/wind_interpolation_effect.png)
+
+This grid interpolation is applied automatically, with linear interpolation being the default, and serve to quickly generate datasets that can be used to test e.g., forecast accuracy for wind
 ![Wind forecast verification grid analysis](showcase/wind_composite_interpolated_linear_nearest.png)
 
-The grid analysis workflow compares error across nearby forecast and observation
-points, then uses interpolation to separate model error from grid-offset error.
-
-![Interpolation effect on wind verification](showcase/wind_interpolation_effect.png)
+Studying e.g., the mean absolute error (MAE) as a factor of lead time - averaged across an entire year - the decay in forecast accuracy with lead time is clear
+![Precipitation event verification](showcase/wind_error_quantiles_interpolated.png)
+and to answer questions like ***are there months which are better/worse in terms of forecast accuracy for a given variable?*** one can generate heat maps like this
+![Precipitation event verification](showcase/monthly_lead_mae_heatmap.png)
 
 Event-based verification turns weather questions into yes/no outcomes: forecast
 rain, observed rain, missed event, false alarm.
 
 ![Precipitation event verification](showcase/precipitation_event_confusion.png)
 
-The newer v3 figures also explore error structure across variables and lead
-windows.
-
-![Interpolated error correlation across variables](showcase/error_correlation_matrix_interpolated_composite.png)
 
 ## What You Can Do
 
@@ -62,7 +64,7 @@ windows.
 ## Open-Meteo Backend
 
 MeteoRight works with the public Open-Meteo APIs by default. That is the easiest
-way to try the project: no local backend and no API key are required for
+way to try the project: no local backend is required for
 non-commercial use. This method is however, strongly rate-limited.
 
 For larger investigations, the fast path is a local Open-Meteo backend. The
@@ -87,7 +89,7 @@ meteoright download \
   --output data/copenhagen_demo
 ```
 
-Commercial Open-Meteo users can get an API key from the
+Commercial Open-Meteo users are can use their API key from the
 [Open-Meteo pricing page](https://open-meteo.com/en/pricing). MeteoRight sends
 that key as the Open-Meteo `apikey` query parameter:
 
@@ -176,8 +178,7 @@ meteoright grid-points \
   --summary
 ```
 
-Then open `showcase/README.md` for examples of the analysis outputs this repo is
-being shaped around.
+Then open `showcase/README.md` for examples of the analysis outputs this repo is shaped around.
 
 ## Python Examples
 
