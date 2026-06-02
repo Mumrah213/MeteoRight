@@ -33,8 +33,9 @@ The `showcase/` folder contains the curated figures to showcase what can be achi
 E.g., it is straightforward to generate the following plot showing the accuracy of wind-related variables in the Malmö/Copenhagen area.
 ![Wind forecast verification grid analysis](showcase/wind_composite_interpolated_linear_nearest.png)
 
-A cornerstone of the MeteoRight analysis scheme is the grid interpolation, which minimizes the errors from the mismatch between the forecast and the observation grid
-![Interpolation effect on wind verification](showcase/grid_interpolation_schematic.png)
+A cornerstone of the MeteoRight analysis scheme is the grid interpolation, which minimizes the errors from the mismatch between the forecast and the observation grid - and the mismatch between the grids can be included in geoplots using a single CLI flag
+![Interpolation effect on wind verification](showcase/surface_composite_forecast_observation_grid.png)
+
 Since most available observations are on land, whereas forecasts are everywhere, the interpolation
 can have significant effects on coastal areas
 ![Interpolation effect on wind verification](showcase/wind_interpolation_effect.png)
