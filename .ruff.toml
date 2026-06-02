@@ -1,0 +1,49 @@
+# Ruff configuration for weather-unified
+# https://docs.astral.sh/ruff/
+
+target-version = "py311"
+line-length = 100
+
+# Exclude notebooks (Jupyter magic) and legacy scripts
+exclude = ["notebooks/*", "scripts/legacy/*", "examples/*"]
+
+[lint]
+# Enable a curated subset of rules — enough to improve consistency
+# without overwhelming developers with noise.
+select = [
+    "E",       # pycodestyle errors
+    "F",       # pyflakes (unused imports, etc.)
+    "I",       # isort (import sorting)
+    "W",       # pycodestyle warnings
+    "UP",      # pyupgrade (modernize syntax)
+    "B",       # flake8-bugbear (common bugs)
+    "SIM",     # flake8-simplify (readability)
+    "T20",     # flake8-print (print statements)
+    "RUF",     # ruff-specific rules
+]
+ignore = [
+    "E402",    # module-level import not at top (legitimate in __init__.py re-exports and notebooks)
+    "E501",    # line-too-long (handled by formatter-style, not enforced here)
+    "T201",    # print() is fine for CLI/debug
+    "RUF001",  # ambiguous Unicode characters in strings (×, ℹ, etc. are fine for display)
+    "RUF002",  # ambiguous Unicode in docstrings
+    "RUF003",  # ambiguous Unicode in comments
+    "SIM102",  # nested if statements (readability is subjective)
+    "SIM108",  # ternary operator preference (style only)
+    "SIM118",  # key in dict.keys() vs key in dict (both work fine)
+    "RUF005",  # iterable unpacking vs concatenation (both work fine)
+    "RUF015",  # next() vs single element slice (both work fine)
+    "SIM401",  # .get() vs if-else (both work fine)
+    "RUF022",  # __all__ not sorted
+    "RUF046",  # redundant int cast
+    "RUF059",  # unused unpacked variable
+    "SIM105",  # contextlib.suppress vs try/except/pass
+]
+
+[lint.isort]
+known-first-party = ["src"]
+
+[format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"

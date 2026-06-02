@@ -1,0 +1,71 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Generated run metadata (contains absolute paths)
+**/run_status.csv
+**/run_status.json
+**/catalog.json
+**/manifest.json
+**/download_checkpoints.jsonl
+**/attribution.json
+**/flagship_download_plan.json
+
+# Distribution / packaging
+.dist/
+build/
+dist/
+*.egg-info/
+.eggs/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Data files (generated)
+/data/
+/output/
+/outputs/
+/storage/
+
+# Generated showcase working data. Keep curated publication images in /showcase.
+/showcase/grid_runs/
+/showcase/analysis_store/
+/showcase/location_runs/
+/showcase/big_data_previous_runs/
+/showcase/big_output/
+/showcase/big_tables/
+/showcase/tables/
+/showcase/output/
+/showcase/download_plan_previous_runs.json
+
+# Local caches
+cache/
+**/cache/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
