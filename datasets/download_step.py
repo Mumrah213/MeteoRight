@@ -23,8 +23,6 @@ Usage
 >>> print(result["forecast_rows"], result["observation_rows"])
 """
 
-from __future__ import annotations
-
 import logging
 import time
 from datetime import datetime, timedelta, timezone

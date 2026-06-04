@@ -1,7 +1,5 @@
 """Pydantic models for weather forecast and observation records."""
 
-from __future__ import annotations
-
 from datetime import datetime
 
 from pydantic import BaseModel, field_validator, model_validator

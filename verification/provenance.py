@@ -5,8 +5,6 @@ is preserved through the alignment process. This is assertion, not
 transformation.
 """
 
-from __future__ import annotations
-
 import logging
 
 import pandas as pd

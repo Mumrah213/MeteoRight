@@ -3,8 +3,6 @@
 All timestamps are converted to UTC. Null values are preserved as None.
 """
 
-from __future__ import annotations
-
 import logging
 from datetime import UTC, datetime
 from typing import Any

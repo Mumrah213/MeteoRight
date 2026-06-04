@@ -23,10 +23,7 @@ Usage
 >>> print(result)
 """
 
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING
 
 import pandas as pd
 
@@ -40,9 +37,6 @@ from .schemas import (
     VARIABLE_COL,
     long_format_columns,
 )
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

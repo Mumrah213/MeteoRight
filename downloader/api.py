@@ -4,7 +4,6 @@ Provides thin wrappers around the Archive API (observations) and
 Single Runs API (forecasts), with retry logic and error handling.
 """
 
-from __future__ import annotations
 
 import logging
 import time
@@ -18,16 +17,12 @@ from .constants import ARCHIVE_API, OPEN_METEO_API_KEY, SINGLE_RUNS_API
 logger = logging.getLogger(__name__)
 
 
-class APIError(Exception):
+class ApiError(Exception):
     """Raised when the API returns an error response."""
 
     def __init__(self, message: str, status_code: int | None = None):
         super().__init__(message)
         self.status_code = status_code
-
-
-class RateLimitError(APIError):
-    """Raised when the API rate limit is hit (HTTP 429)."""
 
 
 def _build_params(
@@ -56,23 +51,20 @@ def _build_params(
 
 def _handle_response(response: httpx.Response) -> dict[str, Any]:
     """Parse an API response, raising on errors."""
-    if response.status_code == 429:
-        raise RateLimitError("API rate limit exceeded", status_code=429)
-
     if response.status_code != 200:
         try:
             body = response.json()
             reason = body.get("reason", response.text)
         except Exception:
             reason = response.text
-        raise APIError(
+        raise ApiError(
             f"API error (HTTP {response.status_code}): {reason}", status_code=response.status_code
         )
 
     try:
         return response.json()
     except Exception as e:
-        raise APIError(f"Invalid JSON response: {e}") from None
+        raise ApiError(f"Invalid JSON response: {e}") from None
 
 
 def _request_with_retry(
@@ -87,8 +79,8 @@ def _request_with_retry(
         try:
             response = client.get(url, params=params)
             return _handle_response(response)
-        except RateLimitError:
-            if attempt < max_retries:
+        except ApiError as exc:
+            if exc.status_code == 429 and attempt < max_retries:
                 wait = retry_delay * (2**attempt)
                 logger.warning(
                     "Rate limited, waiting %.1fs before retry (attempt %d/%d)",
@@ -98,9 +90,6 @@ def _request_with_retry(
                 )
                 time.sleep(wait)
                 continue
-            raise
-        except APIError:
-            # Non-retryable errors (400, etc.) — raise immediately
             raise
         except (httpx.ConnectError, httpx.ReadTimeout, httpx.NetworkError) as e:
             if attempt < max_retries:
@@ -114,21 +103,21 @@ def _request_with_retry(
                 )
                 time.sleep(wait)
                 continue
-            raise APIError(f"Network error after {max_retries} retries: {e}") from None
+            raise ApiError(f"Network error after {max_retries} retries: {e}") from None
         except Exception as e:
-            raise APIError(f"Unexpected error: {e}") from None
+            raise ApiError(f"Unexpected error: {e}") from None
 
     # Should not reach here, but just in case
-    raise APIError("Max retries exceeded")
+    raise ApiError("Max retries exceeded")
 
 
 def _make_client(timeout: float) -> httpx.Client:
     """Create an httpx client that prefers IPv4.
 
-    Many systems (like Fedora Workstation) resolve DNS to both IPv6 and
-    IPv4 addresses but have no IPv6 route. httpcore's connect_tcp raises
-    on the first failure instead of falling back to IPv4. We work around
-    this by forcing IPv4 via local_address='0.0.0.0'.
+    On many systems, DNS returns both IPv6 and IPv4 addresses (dual-stack),
+    but the network has no IPv6 route. httpcore's connect_tcp raises on the
+    first IPv6 failure instead of falling back to IPv4. We force IPv4 via
+    local_address='0.0.0.0' to avoid this issue entirely.
     """
     return httpx.Client(
         timeout=timeout,
@@ -165,7 +154,7 @@ def fetch_observations(
         Parsed JSON response as a dict.
 
     Raises:
-        APIError: On API errors or invalid responses.
+        ApiError: On API errors or invalid responses.
     """
     params = _build_params(
         lat,
@@ -206,7 +195,7 @@ def fetch_single_run(
         Parsed JSON response as a dict.
 
     Raises:
-        APIError: On API errors or invalid responses.
+        ApiError: On API errors or invalid responses.
     """
     run_str = run_time.strftime("%Y-%m-%dT%H:%M")
     params = _build_params(

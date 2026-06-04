@@ -6,8 +6,6 @@ when downloading, storing, or displaying the data.
 https://open-meteo.com/en/license
 """
 
-from __future__ import annotations
-
 import json
 import logging
 from pathlib import Path

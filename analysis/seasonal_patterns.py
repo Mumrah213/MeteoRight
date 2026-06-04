@@ -21,18 +21,12 @@ Usage
 >>> bias = seasonal_bias_summary(df, "temperature_2m")
 """
 
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
 from plots.seasonal import SEASON_ORDER
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

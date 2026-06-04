@@ -1,7 +1,5 @@
 """Location invariants for forecast/observation verification joins."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 from math import asin, cos, radians, sin, sqrt
 

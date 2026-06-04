@@ -1,12 +1,11 @@
 """Tests for confusion matrix computation."""
 
-from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from advanced_verification.confusion import (
+from verification.confusion import (
     compute_confusion_counts,
     compute_confusion_matrix,
 )
@@ -231,7 +230,7 @@ class TestConfusionIntegration:
                 "observed_temperature_2m": [-1, -4, 0, 2, 5, -2, -3],
             }
         )
-        from advanced_verification.events import generate_events
+        from verification.events import generate_events
 
         df = generate_events(df, event_name="frost")
 
@@ -257,7 +256,7 @@ class TestConfusionIntegration:
                 "observed_precipitation": [0.0, 4.0, 0.0],
             }
         )
-        from advanced_verification.events import generate_events
+        from verification.events import generate_events
 
         df = generate_events(df, event_name="heavy_precip")
 

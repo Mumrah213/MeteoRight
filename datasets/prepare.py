@@ -44,11 +44,8 @@ Directory structure created
         └── reports/                # Summary report (markdown)
 """
 
-from __future__ import annotations
-
 import logging
 import shutil
-import time
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any

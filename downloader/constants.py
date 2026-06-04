@@ -1,7 +1,5 @@
 """Constants for Open-Meteo API access."""
 
-from __future__ import annotations
-
 import os
 
 # Public Open-Meteo endpoints used when no self-hosted backend is configured.
@@ -10,8 +8,10 @@ PUBLIC_SINGLE_RUNS_API = "https://single-runs-api.open-meteo.com/v1/forecast"
 
 # API base URLs.
 #
-# Set METEORIGHT_OPEN_METEO_BASE_URL to use a self-hosted Open-Meteo backend,
-# for example http://localhost:8080. Dedicated endpoint variables win when set.
+# Set METEORIGHT_OPEN_METEO_BASE_URL to route all requests to a self-hosted
+# Open-Meteo backend (e.g. http://localhost:8080 for local development).
+# Per-endpoint variables (METEORIGHT_OPEN_METEO_ARCHIVE_API, etc.) take
+# precedence when set.
 OPEN_METEO_BASE_URL = os.getenv("METEORIGHT_OPEN_METEO_BASE_URL")
 OPEN_METEO_API_KEY = os.getenv("METEORIGHT_OPEN_METEO_API_KEY")
 

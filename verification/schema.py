@@ -4,8 +4,6 @@ Defines the column names, types, and ordering for the verification output.
 Every module in this package references these constants for consistency.
 """
 
-from __future__ import annotations
-
 # ---------------------------------------------------------------------------
 # Provenance columns — always present, never renamed
 # ---------------------------------------------------------------------------

@@ -50,8 +50,6 @@ Every dataset has a ``manifest.json`` in the ``manifests/`` subdirectory:
     }
 """
 
-from __future__ import annotations
-
 # ---------------------------------------------------------------------------
 # Directory layout constants
 # ---------------------------------------------------------------------------

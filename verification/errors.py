@@ -3,8 +3,6 @@
 Only simple subtraction — no aggregated metrics. NaN propagation is automatic.
 """
 
-from __future__ import annotations
-
 import logging
 
 import pandas as pd

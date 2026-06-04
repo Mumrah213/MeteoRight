@@ -22,15 +22,12 @@ Usage
 >>> validate_manifest(manifest)  # returns list of issues
 """
 
-from __future__ import annotations
-
 import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from .config import LOCATION_PRESETS, VARIABLE_SETS
 from .schema import (
     LOC_LATITUDE,
     LOC_LONGITUDE,

@@ -21,8 +21,6 @@ Usage
 >>> print(result["verification_rows"])
 """
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
 from typing import Any
@@ -34,7 +32,7 @@ from verification.location import validate_location_compatibility
 
 logger = logging.getLogger(__name__)
 
-# Season mapping — shared with metrics/advanced_verification
+# Season mapping — shared with metrics/verification
 SEASON_MAP: dict[int, str] = {
     12: "DJF", 1: "DJF", 2: "DJF",
     3: "MAM", 4: "MAM", 5: "MAM",

@@ -5,8 +5,6 @@ All forecast rows survive — unmatched rows get NaN in observed columns.
 Both forecast_target_time and observation_time are preserved.
 """
 
-from __future__ import annotations
-
 import logging
 
 import pandas as pd

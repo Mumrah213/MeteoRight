@@ -10,8 +10,6 @@ These are thin wrappers — they exist for convenience, not as a replacement
 for the general aggregate_metrics() function.
 """
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
 

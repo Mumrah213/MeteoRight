@@ -7,8 +7,6 @@ Invariant: canonical verification datasets (P2) are never mutated.
 All metrics are derived artifacts stored separately.
 """
 
-from __future__ import annotations
-
 # ---------------------------------------------------------------------------
 # Metric name constants
 # ---------------------------------------------------------------------------

@@ -16,11 +16,8 @@ Usage
 >>> fig.savefig("outputs/figures/mae_by_lead_time_icon_vs_gfs.png")
 """
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -37,8 +34,6 @@ from .utils import (
     save_figure,
 )
 
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

@@ -24,13 +24,10 @@ $ weather-analyzer prepare-dataset \\
 $ weather-analyzer dataset-info ./datasets/copenhagen_2y
 """
 
-from __future__ import annotations
-
 import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Any
 
 logger = logging.getLogger(__name__)
 

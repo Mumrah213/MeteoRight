@@ -38,15 +38,9 @@ The caller (aggregation engine) is responsible for tracking
 sample_size, total_rows, and missing_count per bucket.
 """
 
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING
 
 import pandas as pd
-
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

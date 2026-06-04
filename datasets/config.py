@@ -15,14 +15,11 @@ Usage
 Copenhagen 55.605 12.574
 
 >>> vars = VARIABLE_SETS["all"]
->>> print(vars)
-['temperature_2m', 'dew_point_2m', ...]
+>>> vars[0]
+'temperature_2m'
 """
 
-from __future__ import annotations
-
 import logging
-from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +87,7 @@ DEFAULT_MODELS: dict[str, tuple[str, ...]] = {
 }
 
 # ---------------------------------------------------------------------------
-# Built-in event names (mirrors advanced_verification)
+# Built-in event names (mirrors verification)
 # ---------------------------------------------------------------------------
 
 BUILT_IN_EVENTS = (
@@ -100,7 +97,7 @@ BUILT_IN_EVENTS = (
     "no_rain",
 )
 
-# Event definitions (mirrors advanced_verification.schema)
+# Event definitions (mirrors verification.schema)
 EVENT_DEFINITIONS: dict[str, dict[str, Any]] = {
     "frost": {
         "variable": "temperature_2m",
@@ -150,11 +147,21 @@ def generate_dataset_name(
 ) -> str:
     """Generate a dataset directory name from location and date range.
 
+    Args:
+        location_name: Human-readable location name (e.g. "Copenhagen").
+        start_date: Start date in YYYY-MM-DD format.
+        end_date: End date in YYYY-MM-DD format.
+
+    Returns:
+        Lowercase slug with year count, e.g. "copenhagen_2y" or "copenhagen_2024".
+
     Examples:
         >>> generate_dataset_name("Copenhagen", "2024-01-01", "2025-12-31")
         'copenhagen_2y'
         >>> generate_dataset_name("Stockholm", "2023-06-01", "2024-05-31")
-        'stockholm_1y'
+        'stockholm_2y'
+        >>> generate_dataset_name("New York", "2024-03-01", "2024-08-31")
+        'new_york_2024'
     """
     import re
 

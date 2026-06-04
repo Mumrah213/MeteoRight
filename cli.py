@@ -39,7 +39,7 @@ Examples:
         --verification ./data/verification/*.parquet \\
         --output ./outputs
 
-    # Full pipeline
+    # Full pipeline. Download, Verify, Analyze+Basic plots
     weather-analyzer pipeline \\
         --lat 55.605 --lon 13.003 \\
         --start 2025-01-01 --end 2025-01-07 \\
@@ -47,7 +47,6 @@ Examples:
         --output ./outputs
 """
 
-from __future__ import annotations
 
 import argparse
 import logging
@@ -537,11 +536,11 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
 
 def cmd_advanced_events(args: argparse.Namespace) -> int:
     """Generate events and compute skill scores."""
-    from advanced_verification.confusion import compute_confusion_matrix
-    from advanced_verification.events import generate_events
-    from advanced_verification.io import load_verification, write_confusion, write_skill_scores
-    from advanced_verification.skill_scores import compute_skill_scores
-    from advanced_verification.validation import validate_confusion, validate_skill_scores
+    from verification.confusion import compute_confusion_matrix
+    from verification.events import generate_events
+    from verification.event_io import load_verification, write_confusion, write_skill_scores
+    from verification.skill_scores import compute_skill_scores
+    from verification.event_validation import validate_confusion, validate_skill_scores
 
     # Load verification data
     verification_df = load_verification(args.verification)
@@ -602,11 +601,11 @@ def cmd_advanced_events(args: argparse.Namespace) -> int:
 
 def cmd_advanced_skill(args: argparse.Namespace) -> int:
     """Compute confusion matrix and skill scores."""
-    from advanced_verification.confusion import compute_confusion_matrix
-    from advanced_verification.events import generate_events
-    from advanced_verification.io import load_verification, write_confusion, write_skill_scores
-    from advanced_verification.skill_scores import compute_skill_scores
-    from advanced_verification.validation import validate_confusion, validate_skill_scores
+    from verification.confusion import compute_confusion_matrix
+    from verification.events import generate_events
+    from verification.event_io import load_verification, write_confusion, write_skill_scores
+    from verification.skill_scores import compute_skill_scores
+    from verification.event_validation import validate_confusion, validate_skill_scores
 
     verification_df = load_verification(args.verification)
     console.print(f"  Loaded {len(verification_df)} verification rows")
@@ -650,10 +649,10 @@ def cmd_advanced_skill(args: argparse.Namespace) -> int:
 
 def cmd_advanced_compare(args: argparse.Namespace) -> int:
     """Compare model skill scores."""
-    from advanced_verification.confusion import compute_confusion_matrix
-    from advanced_verification.events import generate_events
-    from advanced_verification.io import load_verification
-    from advanced_verification.skill_scores import compute_skill_scores
+    from verification.confusion import compute_confusion_matrix
+    from verification.events import generate_events
+    from verification.event_io import load_verification
+    from verification.skill_scores import compute_skill_scores
 
     verification_df = load_verification(args.verification)
     models = [m.strip() for m in args.models.split(",")]
@@ -714,7 +713,7 @@ def cmd_advanced_compare(args: argparse.Namespace) -> int:
 
 def cmd_grid_points(args: argparse.Namespace) -> int:
     """Find model grid points within a square region."""
-    from src.forecast.grid_points import find_grid_points, summarize_grid_points
+    from forecast.grid_points import find_grid_points, summarize_grid_points
 
     console = Console()
 

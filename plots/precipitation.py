@@ -21,11 +21,8 @@ Usage
 >>> fig.savefig("outputs/figures/hit_miss_by_threshold.png")
 """
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -39,8 +36,6 @@ from .utils import (
     save_figure,
 )
 
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

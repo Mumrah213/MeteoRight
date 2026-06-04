@@ -3,7 +3,6 @@
 Tests the full pipeline: load → align → verify → error → validate → save.
 """
 
-from __future__ import annotations
 
 import json
 from datetime import UTC, datetime, timedelta

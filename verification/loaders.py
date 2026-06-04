@@ -4,8 +4,6 @@ Partition-aware reading with date-range filtering. Eager (in-memory) loading
 returning pandas DataFrames with timezone-aware UTC timestamps.
 """
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
 

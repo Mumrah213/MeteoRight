@@ -1,12 +1,11 @@
 """Tests for skill score computation."""
 
-from __future__ import annotations
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from advanced_verification.skill_scores import (
+from verification.skill_scores import (
     SKILL_SCORE_FUNCTIONS,
     _compute_accuracy,
     _compute_csi,

@@ -4,8 +4,6 @@ Checks for missing observations, duplicates, impossible lead times,
 and timestamp gaps. Produces a structured validation report.
 """
 
-from __future__ import annotations
-
 import json
 import logging
 from dataclasses import asdict, dataclass

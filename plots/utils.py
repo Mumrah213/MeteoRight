@@ -10,16 +10,11 @@ All plotting functions in this package use these utilities for consistency:
 This module is the single source of truth for visual styling.
 """
 
-from __future__ import annotations
-
 import logging
-from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

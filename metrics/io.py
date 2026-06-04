@@ -8,8 +8,6 @@ Handles:
 All verification data is read-only. Metrics are written as new files.
 """
 
-from __future__ import annotations
-
 import logging
 from datetime import UTC, datetime
 from pathlib import Path

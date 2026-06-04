@@ -1,6 +1,5 @@
 """Open-Meteo backend configuration behavior."""
 
-from __future__ import annotations
 
 import importlib
 
@@ -17,7 +16,7 @@ def restore_open_meteo_constants(monkeypatch):
     monkeypatch.delenv("METEORIGHT_OPEN_METEO_API_KEY", raising=False)
 
     import downloader.constants as downloader_constants
-    import src.historical.constants as historical_constants
+    import historical.constants as historical_constants
 
     importlib.reload(downloader_constants)
     importlib.reload(historical_constants)
@@ -83,9 +82,9 @@ def test_forecast_http_client_uses_env_base_url_and_api_key(monkeypatch):
     monkeypatch.setenv("METEORIGHT_OPEN_METEO_BASE_URL", "http://localhost:8080")
     monkeypatch.setenv("METEORIGHT_OPEN_METEO_API_KEY", "secret")
 
-    from src.forecast.http_client import HTTPClient
+    from forecast.http_client import HttpClient
 
-    client = HTTPClient()
+    client = HttpClient()
     url = client._build_url("/v1/forecast", {"latitude": 55.605})
 
     assert url.startswith("http://localhost:8080/v1/forecast?")

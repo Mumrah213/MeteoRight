@@ -23,11 +23,8 @@ Usage
 >>> fig.savefig("outputs/figures/error_histogram_temperature_2m_24h.png")
 """
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,8 +38,6 @@ from .utils import (
     save_figure,
 )
 
-if TYPE_CHECKING:
-    pass
 
 logger = logging.getLogger(__name__)
 

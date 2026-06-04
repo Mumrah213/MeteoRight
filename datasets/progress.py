@@ -17,10 +17,7 @@ Usage
 >>> reporter.complete("Data downloaded")
 """
 
-from __future__ import annotations
-
 import logging
-from pathlib import Path
 
 from rich.console import Console
 
@@ -173,7 +170,3 @@ class ProgressReporter:
         self.console.print(f"[dim]i {message}[/dim]")
         logger.info(message)
         return self
-
-
-# Type hint for kwargs in summary
-from typing import Any

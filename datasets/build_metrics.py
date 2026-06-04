@@ -27,8 +27,6 @@ Usage
 ['lead_hours', 'season', 'month', 'model']
 """
 
-from __future__ import annotations
-
 import logging
 from pathlib import Path
 from typing import Any
