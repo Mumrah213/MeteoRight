@@ -30,14 +30,15 @@ The goal is simple: ask a weather question, get to a plot with verified data qui
 
 The `showcase/` folder contains the curated figures to showcase what can be achieved by a single CLI command.
 
-A significant feature of MeteoRight is the grid interpolation, which is a necessity due to a mismatch between the forecast grid and the observation grid
-![Interpolation effect on wind verification](showcase/grid_interpolation_schematic.png)
+E.g., it is straightforward to generate the following plot showing the accuracy of wind-related variables in the Malmö/Copenhagen area.
+![Wind forecast verification grid analysis](showcase/wind_composite_interpolated_linear_nearest.png)
+
+A cornerstone of the MeteoRight analysis scheme is the grid interpolation, which minimizes the errors from the mismatch between the forecast and the observation grid - and the mismatch between the grids can be included in geoplots using a single CLI flag
+![Interpolation effect on wind verification](showcase/surface_composite_forecast_observation_grid.png)
+
 Since most available observations are on land, whereas forecasts are everywhere, the interpolation
 can have significant effects on coastal areas
 ![Interpolation effect on wind verification](showcase/wind_interpolation_effect.png)
-
-This grid interpolation is applied automatically, with linear interpolation being the default, and serve to quickly generate datasets that can be used to test e.g., forecast accuracy for wind
-![Wind forecast verification grid analysis](showcase/wind_composite_interpolated_linear_nearest.png)
 
 Studying e.g., the mean absolute error (MAE) as a factor of lead time - averaged across an entire year - the decay in forecast accuracy with lead time is clear
 ![Precipitation event verification](showcase/wind_error_quantiles_interpolated.png)
@@ -49,6 +50,7 @@ rain, observed rain, missed event, false alarm.
 
 ![Precipitation event verification](showcase/precipitation_event_confusion.png)
 
+While Copenhagen was chosen as a demo area, the methodology can be applied anywhere on the globe.
 
 ## What You Can Do
 
