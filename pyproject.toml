@@ -41,13 +41,18 @@ dev = [
     "hypothesis>=6.100",
     "ruff>=0.13",
 ]
+agent = [
+    "langgraph>=1.2",
+    "langchain-core>=1.4",
+    "langchain-openai>=1.2",
+]
 
 [project.scripts]
 meteoright = "cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*", "advanced_verification", "agent_tools", "analysis", "datasets", "downloader", "metrics", "plots", "util", "verification"]
+include = ["src*", "advanced_verification", "agent", "agent_tools", "analysis", "datasets", "downloader", "metrics", "plots", "util", "verification"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -784,6 +784,21 @@ def cmd_ask(args: argparse.Namespace) -> int:
     return _emit_json(result)
 
 
+def cmd_agent(args: argparse.Namespace) -> int:
+    """Drive the constrained LangGraph agent over a natural-language question."""
+    if args.graph:
+        from agent.run import mermaid
+
+        print(mermaid(args.backend_base_url))
+        return 0
+    if not args.question:
+        console.print("[red]Provide a question, or use --graph to print the diagram.[/red]")
+        return 1
+    from agent.run import answer
+
+    return _emit_json(answer(args.question, backend_base_url=args.backend_base_url))
+
+
 def cmd_compare_models(args: argparse.Namespace) -> int:
     """Rank models by accuracy for a variable over an area; emit JSON."""
     from agent_tools import compare_models
@@ -1057,6 +1072,18 @@ def main(argv: list[str] | None = None) -> int:
     ask_parser.add_argument("--metrics", default="mae,rmse,bias", help="Comma-separated metrics")
     ask_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND, help="Backend forecast URL")
     ask_parser.set_defaults(handler=cmd_ask)
+
+    agent_parser = subparsers.add_parser(
+        "agent",
+        description="Answer a natural-language forecast-accuracy question via the constrained agent.",
+        help="Ask the agent a question (JSON)",
+    )
+    agent_parser.add_argument("question", nargs="?", help="Natural-language question")
+    agent_parser.add_argument(
+        "--graph", action="store_true", help="Print the agent graph as a mermaid diagram and exit"
+    )
+    agent_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
+    agent_parser.set_defaults(handler=cmd_agent)
 
     cm_parser = subparsers.add_parser(
         "compare-models",
