@@ -784,6 +784,23 @@ def cmd_ask(args: argparse.Namespace) -> int:
     return _emit_json(result)
 
 
+def cmd_compare_models(args: argparse.Namespace) -> int:
+    """Rank models by accuracy for a variable over an area; emit JSON."""
+    from agent_tools import compare_models
+
+    models = [m.strip() for m in args.models.split(",")] if args.models else None
+    result = compare_models(
+        args.variable,
+        args.area,
+        models=models,
+        metric=args.metric,
+        start=args.start,
+        end=args.end,
+        backend_base_url=args.backend_base_url,
+    )
+    return _emit_json(result)
+
+
 def cmd_describe_backend(args: argparse.Namespace) -> int:
     from agent_tools.backend import describe_backend
 
@@ -1040,6 +1057,20 @@ def main(argv: list[str] | None = None) -> int:
     ask_parser.add_argument("--metrics", default="mae,rmse,bias", help="Comma-separated metrics")
     ask_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND, help="Backend forecast URL")
     ask_parser.set_defaults(handler=cmd_ask)
+
+    cm_parser = subparsers.add_parser(
+        "compare-models",
+        description="Rank models by forecast accuracy for a variable over an area.",
+        help="Compare model accuracy (JSON)",
+    )
+    cm_parser.add_argument("--variable", required=True, help="e.g. temperature_2m")
+    cm_parser.add_argument("--area", required=True, help='Place, list, or "Malmö-Copenhagen"')
+    cm_parser.add_argument("--models", help="Comma-separated friendly names (default: all available)")
+    cm_parser.add_argument("--metric", default="mae", choices=["mae", "rmse", "bias"])
+    cm_parser.add_argument("--start", help="Start date YYYY-MM-DD")
+    cm_parser.add_argument("--end", help="End date YYYY-MM-DD")
+    cm_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
+    cm_parser.set_defaults(handler=cmd_compare_models)
 
     db_parser = subparsers.add_parser(
         "describe-backend", help="Probe backend models and coverage (JSON)"

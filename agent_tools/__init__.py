@@ -12,7 +12,7 @@ discovered at runtime via :func:`agent_tools.backend.describe_backend` rather
 than hardcoded, so the tools keep working as the backend changes.
 """
 
-from agent_tools.accuracy import forecast_accuracy
+from agent_tools.accuracy import compare_models, forecast_accuracy
 from agent_tools.areas import resolve_area
 from agent_tools.backend import describe_backend
 from agent_tools.catalog import list_variables
@@ -27,4 +27,5 @@ __all__ = [
     "list_models",
     "list_variables",
     "forecast_accuracy",
+    "compare_models",
 ]

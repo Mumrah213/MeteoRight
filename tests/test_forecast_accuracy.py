@@ -109,3 +109,42 @@ def test_variable_unavailable_offline(monkeypatch, fake_backend_desc):
         backend_desc=fake_backend_desc, use_network_geocode=False,
     )
     assert r["error"]["type"] == "VariableUnavailable"
+
+
+def test_compare_models_ranks_by_metric(monkeypatch):
+    # Two models with the same coverage; different forecast error magnitudes.
+    desc = {
+        "base_url": "http://test/v1/forecast", "reachable": True,
+        "models": [
+            {"backend_name": "ecmwf_ifs025", "has_data": True,
+             "coverage": {"start": "2026-05-07", "end": "2026-05-18"}},
+            {"backend_name": "dwd_icon", "has_data": True,
+             "coverage": {"start": "2026-05-07", "end": "2026-05-18"}},
+        ],
+        "observations": {"source": "archive", "url": "http://test/v1/archive",
+                         "coverage": {"start": "2026-05-07", "end": "2026-05-18"}},
+        "error": None,
+    }
+    times = _times(3)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        url = str(request.url)
+        if "archive" in url:
+            return httpx.Response(200, json=_hourly_payload(times, temperature_2m=[10.0, 10.0, 10.0]))
+        # ecmwf off by 2 each hour, icon off by 1 -> icon should win.
+        if "ecmwf_ifs025" in url:
+            return httpx.Response(200, json=_hourly_payload(times, temperature_2m=[12.0, 12.0, 12.0]))
+        return httpx.Response(200, json=_hourly_payload(times, temperature_2m=[11.0, 11.0, 11.0]))
+
+    monkeypatch.setattr(
+        download, "_make_client",
+        lambda timeout: httpx.Client(transport=httpx.MockTransport(handler)),
+    )
+    r = accuracy.compare_models(
+        "temperature_2m", "Copenhagen", models=["ecmwf", "icon"],
+        backend_desc=desc, use_network_geocode=False,
+    )
+    assert r["error"] is None
+    assert [e["model_backend_name"] for e in r["ranking"]] == ["dwd_icon", "ecmwf_ifs025"]
+    assert r["ranking"][0]["value"] == pytest.approx(1.0)
+    assert r["ranking"][1]["value"] == pytest.approx(2.0)

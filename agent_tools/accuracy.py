@@ -209,3 +209,85 @@ def forecast_accuracy(
     }
     out["notes"].append("Area resolved to nearest grid point (no spatial pooling).")
     return out
+
+
+def compare_models(
+    variable: str,
+    area: str | list[str],
+    *,
+    models: list[str] | None = None,
+    metric: str = "mae",
+    start: str | None = None,
+    end: str | None = None,
+    backend_base_url: str = "http://127.0.0.1:8080/v1/forecast",
+    backend_desc: dict[str, Any] | None = None,
+    use_network_geocode: bool = True,
+) -> dict[str, Any]:
+    """Rank models by accuracy for one variable over an area.
+
+    Runs :func:`forecast_accuracy` for each model and sorts the successful ones
+    by ``metric`` (ascending — lower error is better). Models that cannot be
+    evaluated (no overlap, variable unavailable, ...) are reported separately
+    with their error, so the comparison stays honest about what was skipped.
+
+    Args:
+        models: Friendly model names. Default: every model the backend serves.
+        metric: Ranking metric (one of mae/rmse/bias; |bias| is used to rank).
+        Other args mirror :func:`forecast_accuracy`.
+
+    Returns:
+        ``{"question", "variable", "metric", "ranking": [...],
+           "skipped": [{"model", "error"}], "error": None|{...}}``
+    """
+    if backend_desc is None:
+        backend_desc = describe_backend(backend_base_url)
+    if not backend_desc.get("reachable"):
+        return {
+            "question": {"variable": variable, "area": area},
+            "ranking": [], "skipped": [],
+            "error": backend_desc.get("error")
+            or _err("BackendUnreachable", f"Backend not reachable at {backend_base_url}"),
+        }
+
+    if models is None:
+        # Reverse the alias table so each backend domain gets a friendly name.
+        from agent_tools.models import MODEL_ALIASES
+
+        friendly_for = {d: a for a, d in MODEL_ALIASES.items() if a != d}
+        models = [
+            friendly_for.get(m["backend_name"], m["backend_name"])
+            for m in backend_desc["models"]
+        ]
+
+    ranking: list[dict[str, Any]] = []
+    skipped: list[dict[str, Any]] = []
+    for model in models:
+        r = forecast_accuracy(
+            variable, area, model=model, start=start, end=end,
+            metrics=(metric,) if metric != "bias" else ("bias",),
+            backend_base_url=backend_base_url, backend_desc=backend_desc,
+            use_network_geocode=use_network_geocode,
+        )
+        if r["answer"] is None:
+            skipped.append({"model": model, "error": r["error"]})
+            continue
+        ranking.append({
+            "model": model,
+            "model_backend_name": r["resolved"]["model_backend_name"],
+            "value": r["answer"]["metrics"].get(metric),
+            "sample_size": r["answer"]["sample_size"],
+            "date_range": r["resolved"]["date_range"],
+        })
+
+    # Lower is better for mae/rmse; for bias, closest to zero.
+    ranking.sort(key=lambda e: abs(e["value"]) if e["value"] is not None else float("inf"))
+
+    return {
+        "question": {"variable": variable, "area": area},
+        "variable": variable,
+        "metric": metric,
+        "units": variable_units(variable),
+        "ranking": ranking,
+        "skipped": skipped,
+        "error": None if ranking else _err("NoModelsEvaluated", "No model could be evaluated"),
+    }
