@@ -35,6 +35,12 @@ LOCATION_PRESETS: dict[str, dict[str, Any]] = {
         "lon": 12.574,
         "timezone": "Europe/Copenhagen",
     },
+    "malmo": {
+        "name": "Malmö",
+        "lat": 55.605,
+        "lon": 13.003,
+        "timezone": "Europe/Stockholm",
+    },
     "stockholm": {
         "name": "Stockholm",
         "lat": 59.329,

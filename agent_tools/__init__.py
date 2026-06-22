@@ -12,6 +12,17 @@ discovered at runtime via :func:`agent_tools.backend.describe_backend` rather
 than hardcoded, so the tools keep working as the backend changes.
 """
 
+from agent_tools.areas import resolve_area
 from agent_tools.backend import describe_backend
+from agent_tools.catalog import list_variables
+from agent_tools.geocoding import geocode_location
+from agent_tools.models import list_models, resolve_model_alias
 
-__all__ = ["describe_backend"]
+__all__ = [
+    "describe_backend",
+    "geocode_location",
+    "resolve_area",
+    "resolve_model_alias",
+    "list_models",
+    "list_variables",
+]
