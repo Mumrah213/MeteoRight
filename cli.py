@@ -794,9 +794,50 @@ def cmd_agent(args: argparse.Namespace) -> int:
     if not args.question:
         console.print("[red]Provide a question, or use --graph to print the diagram.[/red]")
         return 1
+    if args.trace:
+        from agent.trace import render_flow
+
+        result = render_flow(args.question, console=console, backend_base_url=args.backend_base_url)
+        return 0 if result.answer else 1
     from agent.run import answer
 
     return _emit_json(answer(args.question, backend_base_url=args.backend_base_url))
+
+
+def cmd_chat(args: argparse.Namespace) -> int:
+    """Interactive REPL: ask questions and watch each flow through the graph nodes."""
+    from agent.trace import render_flow
+
+    # Probe the backend once and reuse the description for every question.
+    from agent_tools import describe_backend
+
+    console.print("[bold]MeteoRight agent chat[/bold] — ask about forecast accuracy. "
+                  "Ctrl-D or 'exit' to quit.\n")
+    backend_desc = describe_backend(args.backend_base_url)
+    if not backend_desc.get("reachable"):
+        console.print(f"[yellow]Warning: backend not reachable at {args.backend_base_url}; "
+                      "tools will return errors.[/yellow]\n")
+
+    while True:
+        try:
+            question = console.input("[bold cyan]you ›[/bold cyan] ").strip()
+        except (EOFError, KeyboardInterrupt):
+            console.print("\n[dim]bye[/dim]")
+            return 0
+        if not question:
+            continue
+        if question.lower() in ("exit", "quit", ":q"):
+            console.print("[dim]bye[/dim]")
+            return 0
+        console.print()
+        try:
+            render_flow(
+                question, console=console,
+                backend_base_url=args.backend_base_url, backend_desc=backend_desc,
+            )
+        except Exception as exc:  # keep the REPL alive on any failure
+            console.print(f"[red]error: {type(exc).__name__}: {exc}[/red]")
+        console.print()
 
 
 def cmd_compare_models(args: argparse.Namespace) -> int:
@@ -1082,8 +1123,20 @@ def main(argv: list[str] | None = None) -> int:
     agent_parser.add_argument(
         "--graph", action="store_true", help="Print the agent graph as a mermaid diagram and exit"
     )
+    agent_parser.add_argument(
+        "--trace", action="store_true",
+        help="Show the question's flow through the graph nodes instead of JSON"
+    )
     agent_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
     agent_parser.set_defaults(handler=cmd_agent)
+
+    chat_parser = subparsers.add_parser(
+        "chat",
+        description="Interactive REPL: ask the agent questions and watch the flow through nodes.",
+        help="Interactive agent chat with live node-flow trace",
+    )
+    chat_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
+    chat_parser.set_defaults(handler=cmd_chat)
 
     cm_parser = subparsers.add_parser(
         "compare-models",
@@ -1126,6 +1179,10 @@ def main(argv: list[str] | None = None) -> int:
         logging.basicConfig(level=logging.DEBUG, format="%(levelname)s: %(message)s")
     else:
         logging.basicConfig(level=logging.INFO, format="%(message)s")
+        # Quiet noisy HTTP client logs (httpx logs every request at INFO); they
+        # clutter JSON output and the agent flow trace. Re-enabled by --verbose.
+        for noisy in ("httpx", "httpcore", "openai", "langchain", "urllib3"):
+            logging.getLogger(noisy).setLevel(logging.WARNING)
 
     if not args.command:
         parser.print_help()

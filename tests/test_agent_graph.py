@@ -158,3 +158,46 @@ def test_mermaid_renders():
     diagram = mermaid()
     for node in ("scope_gate", "agent", "validate_args", "tools", "synthesize", "refuse"):
         assert node in diagram
+
+
+def test_iter_flow_emits_node_sequence(monkeypatch):
+    """The trace renderer's event stream follows the graph node order."""
+    import agent.tools as toolsmod
+    from agent.trace import FlowEvent, FlowResult, iter_flow
+
+    monkeypatch.setattr(
+        toolsmod, "forecast_accuracy",
+        lambda variable, area, **kw: {
+            "answer": {"variable": variable, "metrics": {"mae": 1.24}, "units": "°C"},
+            "error": None,
+        },
+    )
+    script = [
+        _tool_call("forecast_accuracy", {"variable": "temperature_2m", "area": "Copenhagen"}),
+        AIMessage(content="Temperature MAE is 1.24 °C."),
+    ]
+    llm = ScriptedLLM("IN", script)
+    items = list(iter_flow("how accurate is temperature for Copenhagen?",
+                           llm=llm, backend_desc=BACKEND_DESC))
+    events = [i for i in items if isinstance(i, FlowEvent)]
+    result = next(i for i in items if isinstance(i, FlowResult))
+
+    assert [e.node for e in events] == [
+        "scope_gate", "agent", "validate_args", "tools", "agent", "synthesize"
+    ]
+    # The tool node's detail line carries the result summary.
+    tool_event = next(e for e in events if e.node == "tools")
+    assert "mae=1.24" in " ".join(tool_event.details)
+    assert result.answer == "Temperature MAE is 1.24 °C."
+    assert result.in_scope is True
+
+
+def test_iter_flow_off_scope_short_circuits(monkeypatch):
+    from agent.trace import FlowEvent, FlowResult, iter_flow
+
+    items = list(iter_flow("write me a poem", llm=ScriptedLLM("OUT", []),
+                           backend_desc=BACKEND_DESC))
+    events = [i for i in items if isinstance(i, FlowEvent)]
+    result = next(i for i in items if isinstance(i, FlowResult))
+    assert [e.node for e in events] == ["scope_gate", "refuse"]
+    assert result.in_scope is False
