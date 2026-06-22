@@ -57,7 +57,9 @@ def _hourly_count(payload: dict[str, Any], var: str = _PROBE_VAR) -> int:
     return sum(1 for v in values if v is not None)
 
 
-def _probe_day(client: httpx.Client, base_url: str, model: str, day: date) -> int:
+def _probe_day(
+    client: httpx.Client, base_url: str, model: str | None, day: date
+) -> int:
     """Return the non-null hourly count for ``model`` on ``day``.
 
     ``0`` means the backend answered but had no data; ``-1`` means the request
@@ -69,10 +71,13 @@ def _probe_day(client: httpx.Client, base_url: str, model: str, day: date) -> in
         "longitude": str(_PROBE_LON),
         "hourly": _PROBE_VAR,
         "timezone": "UTC",
-        "models": model,
         "start_date": day.isoformat(),
         "end_date": day.isoformat(),
     }
+    if model is not None:
+        # Forecast endpoint selects a model with the plural ``models=`` param;
+        # the archive endpoint takes no model (model=None).
+        params["models"] = model
     try:
         response = client.get(base_url, params=params)
     except httpx.HTTPError:
@@ -86,7 +91,7 @@ def _probe_day(client: httpx.Client, base_url: str, model: str, day: date) -> in
 
 
 def _discover_coverage(
-    client: httpx.Client, base_url: str, model: str, *, lookback_days: int
+    client: httpx.Client, base_url: str, model: str | None, *, lookback_days: int
 ) -> dict[str, str] | None:
     """Find the [start, end] date range with data by sampling backwards.
 
@@ -151,10 +156,12 @@ def describe_backend(
         (backend unreachable) ``reachable`` is False and ``models`` is empty.
     """
     candidates = candidate_models or DEFAULT_CANDIDATE_MODELS
+    archive_url = base_url.rsplit("/v1/", 1)[0] + "/v1/archive" if "/v1/" in base_url else None
     result: dict[str, Any] = {
         "base_url": base_url,
         "reachable": False,
         "models": [],
+        "observations": None,
         "error": None,
     }
 
@@ -197,6 +204,19 @@ def describe_backend(
                 models.append(
                     {"backend_name": model, "has_data": True, "coverage": coverage}
                 )
+
+            # Observation (archive/ERA5) coverage — needed to know where a real
+            # accuracy number is computable (forecast and truth must overlap).
+            if discover_coverage and archive_url is not None:
+                obs_cov = _discover_coverage(
+                    client, archive_url, None, lookback_days=lookback_days
+                )
+                if obs_cov is not None:
+                    result["observations"] = {
+                        "source": "archive",
+                        "url": archive_url,
+                        "coverage": obs_cov,
+                    }
     except httpx.HTTPError as exc:
         if not models:
             result["error"] = _err("BackendUnreachable", f"{base_url}: {exc}")

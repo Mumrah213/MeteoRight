@@ -754,6 +754,66 @@ def cmd_grid_points(args: argparse.Namespace) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+# Agent-facing tool commands (machine-readable JSON output)
+# ---------------------------------------------------------------------------
+
+
+def _emit_json(result: dict) -> int:
+    """Print a tool result as JSON; exit 0 on success, 1 if it carries an error."""
+    import json
+
+    print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
+    return 1 if result.get("error") else 0
+
+
+def cmd_ask(args: argparse.Namespace) -> int:
+    """Answer a forecast-accuracy question and emit JSON."""
+    from agent_tools import forecast_accuracy
+
+    metrics = tuple(m.strip() for m in args.metrics.split(",")) if args.metrics else ("mae", "rmse", "bias")
+    result = forecast_accuracy(
+        args.variable,
+        args.area,
+        model=args.model,
+        start=args.start,
+        end=args.end,
+        metrics=metrics,
+        backend_base_url=args.backend_base_url,
+    )
+    return _emit_json(result)
+
+
+def cmd_describe_backend(args: argparse.Namespace) -> int:
+    from agent_tools.backend import describe_backend
+
+    return _emit_json(describe_backend(args.backend_base_url))
+
+
+def cmd_geocode(args: argparse.Namespace) -> int:
+    from agent_tools.geocoding import geocode_location
+
+    return _emit_json(geocode_location(args.name))
+
+
+def cmd_resolve_area(args: argparse.Namespace) -> int:
+    from agent_tools.areas import resolve_area
+
+    return _emit_json(resolve_area(args.area))
+
+
+def cmd_list_models(args: argparse.Namespace) -> int:
+    from agent_tools.models import list_models
+
+    return _emit_json(list_models(base_url=args.backend_base_url))
+
+
+def cmd_list_variables(args: argparse.Namespace) -> int:
+    from agent_tools.catalog import list_variables
+
+    return _emit_json(list_variables())
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="MeteoRight: local Open-Meteo weather analysis laboratory",
@@ -922,7 +982,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     # Location
     pd_parser.add_argument(
-        "--location", "-l", choices=["copenhagen", "stockholm", "berlin"], help="Preset location"
+        "--location", "-l", choices=["copenhagen", "malmo", "stockholm", "berlin"],
+        help="Preset location"
     )
     pd_parser.add_argument("--lat", type=float, help="Latitude")
     pd_parser.add_argument("--lon", type=float, help="Longitude")
@@ -961,6 +1022,46 @@ def main(argv: list[str] | None = None) -> int:
     di_parser.add_argument("dataset_path", type=str, help="Path to dataset directory")
     di_parser.set_defaults(handler="dataset-info")
 
+    # ------------------------------------------------------------------
+    # Agent-facing tools (JSON output)
+    # ------------------------------------------------------------------
+    _DEFAULT_BACKEND = "http://127.0.0.1:8080/v1/forecast"
+
+    ask_parser = subparsers.add_parser(
+        "ask",
+        description="Answer a forecast-accuracy question, e.g. wind direction over an area.",
+        help="Answer a forecast-accuracy question (JSON)",
+    )
+    ask_parser.add_argument("--variable", required=True, help="e.g. temperature_2m, wind_direction_10m")
+    ask_parser.add_argument("--area", required=True, help='Place, list, or "Malmö-Copenhagen"')
+    ask_parser.add_argument("--model", default="ecmwf", help="Friendly model name (default: ecmwf)")
+    ask_parser.add_argument("--start", help="Start date YYYY-MM-DD (default: forecast/obs overlap)")
+    ask_parser.add_argument("--end", help="End date YYYY-MM-DD")
+    ask_parser.add_argument("--metrics", default="mae,rmse,bias", help="Comma-separated metrics")
+    ask_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND, help="Backend forecast URL")
+    ask_parser.set_defaults(handler=cmd_ask)
+
+    db_parser = subparsers.add_parser(
+        "describe-backend", help="Probe backend models and coverage (JSON)"
+    )
+    db_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
+    db_parser.set_defaults(handler=cmd_describe_backend)
+
+    gc_parser = subparsers.add_parser("geocode", help="Resolve a place name to coordinates (JSON)")
+    gc_parser.add_argument("name", help="Place name, e.g. Malmö")
+    gc_parser.set_defaults(handler=cmd_geocode)
+
+    ra_parser = subparsers.add_parser("resolve-area", help="Resolve an area to a grid point (JSON)")
+    ra_parser.add_argument("area", help='Place, list, or "Malmö-Copenhagen"')
+    ra_parser.set_defaults(handler=cmd_resolve_area)
+
+    lm_parser = subparsers.add_parser("list-models", help="List available backend models (JSON)")
+    lm_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
+    lm_parser.set_defaults(handler=cmd_list_models)
+
+    lv_parser = subparsers.add_parser("list-variables", help="List known variables (JSON)")
+    lv_parser.set_defaults(handler=cmd_list_variables)
+
     args = parser.parse_args(argv)
 
     if args.verbose:
@@ -971,6 +1072,11 @@ def main(argv: list[str] | None = None) -> int:
     if not args.command:
         parser.print_help()
         return 0
+
+    # Agent-tool commands register a callable handler directly.
+    handler = getattr(args, "handler", None)
+    if callable(handler):
+        return handler(args)
 
     commands = {
         "download": cmd_download,
