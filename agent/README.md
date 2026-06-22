@@ -11,6 +11,14 @@ keep it doing only what it is supposed to.
 
 ## The graph
 
+Two views follow: an **annotated** diagram (hand-drawn, with the branch
+conditions and the loop labelled, for understanding) and the **generated**
+diagram (emitted straight from the compiled graph, authoritative). The annotated
+one may drift if the graph changes later; the generated one never does — regen
+it with `meteoright agent --graph`.
+
+### Annotated view
+
 ```mermaid
 flowchart TD
     START([question]) --> scope{scope_gate}
@@ -41,9 +49,44 @@ which point it emits a message with no tool calls and the graph routes to
 agent is still calling tools at the cap, the graph forces `synthesize` anyway and
 notes the truncation.
 
-> The live diagram is always available with `meteoright agent --graph`
-> (rendered straight from the compiled graph via `draw_mermaid()`), so it can
-> never drift from the code.
+### Generated view
+
+This is the exact output of `meteoright agent --graph` (LangGraph's
+`compiled_graph.get_graph().draw_mermaid()`). Conditional edges are dotted; the
+terminals are LangGraph's own `__start__` / `__end__`. It is the ground truth —
+if it disagrees with the annotated diagram above, this one is correct.
+
+```mermaid
+---
+config:
+  flowchart:
+    curve: linear
+---
+graph TD;
+	__start__([<p>__start__</p>]):::first
+	scope_gate(scope_gate)
+	refuse(refuse)
+	agent(agent)
+	validate_args(validate_args)
+	tools(tools)
+	synthesize(synthesize)
+	__end__([<p>__end__</p>]):::last
+	__start__ --> scope_gate;
+	agent -.-> synthesize;
+	agent -.-> validate_args;
+	scope_gate -.-> agent;
+	scope_gate -.-> refuse;
+	tools --> agent;
+	validate_args -.-> agent;
+	validate_args -.-> tools;
+	refuse --> __end__;
+	synthesize --> __end__;
+	classDef default fill:#f2f0ff,line-height:1.2
+	classDef first fill-opacity:0
+	classDef last fill:#bfb6fc
+```
+
+> Regenerate this block any time with `meteoright agent --graph`.
 
 ### Nodes
 
