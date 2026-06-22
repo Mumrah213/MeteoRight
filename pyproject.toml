@@ -61,14 +61,13 @@ smoke = [
     "tests/test_import.py",
     "tests/test_cli.py",
     "tests/test_models.py",
-    "tests/test_normalize.py",
     "tests/test_io.py",
     "tests/test_metrics.py",
     "tests/test_aggregations.py",
     "tests/test_confusion.py",
     "tests/test_skill_scores.py",
     "tests/test_location_invariants.py",
-    "tests/test_datasets/test_build_verification.py",
+    "tests/test_download_dataset.py",
     "tests/test_e2e.py",
 ]
 full = ["tests/"]
