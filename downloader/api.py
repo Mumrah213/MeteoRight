@@ -176,6 +176,7 @@ def fetch_single_run(
     lon: float,
     run_time: datetime,
     variables: tuple[str, ...],
+    model: str | None = None,
     max_retries: int = 3,
     retry_delay: float = 1.0,
     api_key: str | None = None,
@@ -188,6 +189,10 @@ def fetch_single_run(
         lon: Longitude.
         run_time: Model initialization time (UTC).
         variables: Tuple of hourly variable names.
+        model: Model name (e.g. "ecmwf_ifs_hres", "gfs"). Passed as the
+            "model" query parameter. Note: the public Open-Meteo Single Runs
+            API ignores this parameter and always returns ECMWF IFS data.
+            Multi-model access requires a self-hosted or customer backend.
         max_retries: Maximum number of retries.
         retry_delay: Base delay between retries (seconds).
 
@@ -198,13 +203,14 @@ def fetch_single_run(
         ApiError: On API errors or invalid responses.
     """
     run_str = run_time.strftime("%Y-%m-%dT%H:%M")
+    extra: dict[str, str] = {"run": run_str}
+    if model:
+        extra["model"] = model
     params = _build_params(
         lat,
         lon,
         variables,
-        extra={
-            "run": run_str,
-        },
+        extra=extra,
         api_key=api_key,
     )
 

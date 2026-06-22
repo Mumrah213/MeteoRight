@@ -170,8 +170,9 @@ def cmd_download(args: argparse.Namespace) -> int:
                     config.longitude,
                     run_time,
                     config.variables,
-                    config.max_retries,
-                    config.retry_delay,
+                    model=args.model,
+                    max_retries=config.max_retries,
+                    retry_delay=config.retry_delay,
                     api_key=api_key,
                     url=single_runs_url,
                 )
@@ -470,6 +471,10 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
         variables=args.variables,
         model=None,
         output=str(data_dir),
+        api_key=getattr(args, "api_key", None),
+        open_meteo_base_url=getattr(args, "open_meteo_base_url", None),
+        open_meteo_archive_url=getattr(args, "open_meteo_archive_url", None),
+        open_meteo_single_runs_url=getattr(args, "open_meteo_single_runs_url", None),
     )
     if cmd_download(obs_args) != 0:
         return 1
@@ -485,6 +490,10 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
         variables=args.variables,
         model=args.model,
         output=str(data_dir),
+        api_key=getattr(args, "api_key", None),
+        open_meteo_base_url=getattr(args, "open_meteo_base_url", None),
+        open_meteo_archive_url=getattr(args, "open_meteo_archive_url", None),
+        open_meteo_single_runs_url=getattr(args, "open_meteo_single_runs_url", None),
     )
     if cmd_download(fcst_args) != 0:
         return 1
@@ -811,6 +820,22 @@ def main(argv: list[str] | None = None) -> int:
     pl.add_argument("--model", required=True, help="Model name")
     pl.add_argument("--variables", default="temperature_2m,precipitation")
     pl.add_argument("--output", default="./outputs", help="Output directory")
+    pl.add_argument(
+        "--open-meteo-base-url",
+        help="Self-hosted Open-Meteo base URL, for example http://localhost:8080",
+    )
+    pl.add_argument(
+        "--open-meteo-archive-url",
+        help="Override the observation/archive endpoint URL",
+    )
+    pl.add_argument(
+        "--open-meteo-single-runs-url",
+        help="Override the archived forecast/single-runs endpoint URL",
+    )
+    pl.add_argument(
+        "--api-key",
+        help="Open-Meteo API key; env fallback is METEORIGHT_OPEN_METEO_API_KEY",
+    )
 
     # Event-based skill analysis.
     adv = subparsers.add_parser(
