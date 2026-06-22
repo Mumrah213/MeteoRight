@@ -273,6 +273,23 @@ meteoright/
 `-- data/                   # Local generated datasets, ignored by Git
 ```
 
+## Agent
+
+A constrained LangGraph agent answers natural-language questions
+("how accurate is the temperature forecast for the Malmö-Copenhagen area?",
+"which model is best?") by orchestrating the analysis tools within an explicit,
+bounded graph — a whitelisted tool set, argument validation, a scope gate, and a
+step cap.
+
+```bash
+meteoright chat                          # interactive REPL with a live node-flow trace
+meteoright agent --trace "<question>"    # one-shot, shows the flow through the graph
+meteoright agent --graph                 # print the graph as a mermaid diagram
+```
+
+See [`agent/README.md`](agent/README.md) for the graph diagram, the loop, the
+guardrails, and LLM configuration.
+
 ## Data Model
 
 The key invariant is forecast provenance:
