@@ -57,6 +57,8 @@ from pathlib import Path
 import pandas as pd
 from rich.console import Console
 
+from util.circular import circular_error_series, is_circular
+
 console = Console()
 logger = logging.getLogger("weather_analyzer")
 
@@ -278,7 +280,10 @@ def cmd_verify(args: argparse.Namespace) -> int:
         fcst_col = f"forecast_{var}"
         obs_col = f"observed_{var}"
         if fcst_col in merged.columns and obs_col in merged.columns:
-            merged[f"{var}_error"] = merged[fcst_col] - merged[obs_col]
+            if is_circular(var):
+                merged[f"{var}_error"] = circular_error_series(merged[fcst_col], merged[obs_col])
+            else:
+                merged[f"{var}_error"] = merged[fcst_col] - merged[obs_col]
 
     # Add time dimensions
     merged["month"] = merged["forecast_target_time"].dt.month
@@ -546,10 +551,10 @@ def cmd_pipeline(args: argparse.Namespace) -> int:
 def cmd_advanced_events(args: argparse.Namespace) -> int:
     """Generate events and compute skill scores."""
     from verification.confusion import compute_confusion_matrix
-    from verification.events import generate_events
     from verification.event_io import load_verification, write_confusion, write_skill_scores
-    from verification.skill_scores import compute_skill_scores
     from verification.event_validation import validate_confusion, validate_skill_scores
+    from verification.events import generate_events
+    from verification.skill_scores import compute_skill_scores
 
     # Load verification data
     verification_df = load_verification(args.verification)
@@ -611,10 +616,10 @@ def cmd_advanced_events(args: argparse.Namespace) -> int:
 def cmd_advanced_skill(args: argparse.Namespace) -> int:
     """Compute confusion matrix and skill scores."""
     from verification.confusion import compute_confusion_matrix
-    from verification.events import generate_events
     from verification.event_io import load_verification, write_confusion, write_skill_scores
-    from verification.skill_scores import compute_skill_scores
     from verification.event_validation import validate_confusion, validate_skill_scores
+    from verification.events import generate_events
+    from verification.skill_scores import compute_skill_scores
 
     verification_df = load_verification(args.verification)
     console.print(f"  Loaded {len(verification_df)} verification rows")
@@ -659,8 +664,8 @@ def cmd_advanced_skill(args: argparse.Namespace) -> int:
 def cmd_advanced_compare(args: argparse.Namespace) -> int:
     """Compare model skill scores."""
     from verification.confusion import compute_confusion_matrix
-    from verification.events import generate_events
     from verification.event_io import load_verification
+    from verification.events import generate_events
     from verification.skill_scores import compute_skill_scores
 
     verification_df = load_verification(args.verification)
@@ -728,7 +733,7 @@ def cmd_grid_points(args: argparse.Namespace) -> int:
 
     if args.summary:
         summary = summarize_grid_points(args.lat, args.lon, args.radius_km)
-        console.print(f"[bold]Grid Points Summary[/bold]")
+        console.print("[bold]Grid Points Summary[/bold]")
         console.print(f"  Center:     ({summary['center']['lat']}, {summary['center']['lon']})")
         console.print(f"  Radius:     {summary['radius_km']} km (square)")
         console.print(f"  Total pts:  {summary['total_points']} (IFS={summary['ifs_points']}, ERA5={summary['era5_points']})")

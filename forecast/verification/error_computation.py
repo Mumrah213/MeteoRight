@@ -17,22 +17,15 @@ shortest-angle convention: the minimum signed difference on
 the unit circle, wrapped to [-180, +180)."""
 
 
+from util.circular import CIRCULAR_VARIABLES
+from util.circular import circular_error as _circular_error
+
 from .alignment import AlignmentRecord
 
-# Variables treated as circular (0-360° phase angle)
-CIRCULAR_VARIABLES = frozenset({"wind_direction_10m"})
-
-
-def _circular_error(forecast: float, observation: float) -> float:
-    """Compute shortest-angle error for a 0-360° circular variable.
-
-    Returns a value in [-180, +180).  Positive means forecast
-    is clockwise of observation; negative means counter-clockwise.
-    """
-    diff = forecast - observation
-    # Wrap to [-180, +180)
-    diff = ((diff + 180.0) % 360.0) - 180.0
-    return diff
+# CIRCULAR_VARIABLES and _circular_error are the shared definitions from
+# util.circular, re-exported here so this module's existing callers and tests
+# keep working while there is a single source of truth.
+__all__ = ["CIRCULAR_VARIABLES", "_circular_error", "ErrorComputation", "ErrorComputationError"]
 
 
 class ErrorComputationError(Exception):

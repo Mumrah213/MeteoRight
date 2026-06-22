@@ -26,6 +26,7 @@ from typing import Any
 
 import pandas as pd
 
+from util.circular import circular_error_series, is_circular
 from verification.location import validate_location_compatibility
 
 logger = logging.getLogger(__name__)
@@ -177,8 +178,13 @@ def align(
     if match_mask.any():
         fcst_vals = aligned.loc[match_mask, "forecast_value"].astype(float)
         obs_vals = aligned.loc[match_mask, "observation_value"].astype(float)
-        aligned.loc[match_mask, "error"] = fcst_vals - obs_vals
-        aligned.loc[match_mask, "abs_error"] = (fcst_vals - obs_vals).abs()
+        # Circular variables (e.g. wind direction) use shortest-angle error so
+        # the 0/360 wraparound is handled correctly; everything else subtracts.
+        circular_rows = aligned.loc[match_mask, "variable"].map(is_circular)
+        err = fcst_vals - obs_vals
+        err = err.where(~circular_rows, circular_error_series(fcst_vals, obs_vals))
+        aligned.loc[match_mask, "error"] = err
+        aligned.loc[match_mask, "abs_error"] = err.abs()
 
     # ── Select canonical output columns ────────────────────────────────
     output_cols = [c for c in ALIGNED_COLUMNS if c in aligned.columns]

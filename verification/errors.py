@@ -7,6 +7,8 @@ import logging
 
 import pandas as pd
 
+from util.circular import circular_error_series, is_circular
+
 from .schema import ERROR_SUFFIX, forecast_var, observed_var
 
 logger = logging.getLogger(__name__)
@@ -47,8 +49,12 @@ def compute_error_columns(
             )
             continue
 
-        df[error_col] = df[forecast_col] - df[observed_col]
-        logger.debug("  Computed %s = %s - %s", error_col, forecast_col, observed_col)
+        if is_circular(var):
+            df[error_col] = circular_error_series(df[forecast_col], df[observed_col])
+            logger.debug("  Computed %s = circular(%s, %s)", error_col, forecast_col, observed_col)
+        else:
+            df[error_col] = df[forecast_col] - df[observed_col]
+            logger.debug("  Computed %s = %s - %s", error_col, forecast_col, observed_col)
 
     logger.info("  Computed error columns for %d variables", len(variables))
 

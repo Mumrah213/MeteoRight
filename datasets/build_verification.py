@@ -28,6 +28,7 @@ from typing import Any
 import pandas as pd
 
 from datasets.progress import ProgressReporter
+from util.circular import circular_error_series, is_circular
 from verification.location import validate_location_compatibility
 
 logger = logging.getLogger(__name__)
@@ -153,7 +154,10 @@ def build_verification(
         fcst_col = f"forecast_{var}"
         obs_col = f"observed_{var}"
         if fcst_col in merged.columns and obs_col in merged.columns:
-            merged[f"{var}_error"] = merged[fcst_col] - merged[obs_col]
+            if is_circular(var):
+                merged[f"{var}_error"] = circular_error_series(merged[fcst_col], merged[obs_col])
+            else:
+                merged[f"{var}_error"] = merged[fcst_col] - merged[obs_col]
 
     # ------------------------------------------------------------------
     # Add derived time dimensions

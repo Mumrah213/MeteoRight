@@ -47,7 +47,7 @@ meteoright = "cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*", "advanced_verification", "analysis", "datasets", "downloader", "metrics", "plots", "verification"]
+include = ["src*", "advanced_verification", "agent_tools", "analysis", "datasets", "downloader", "metrics", "plots", "util", "verification"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
