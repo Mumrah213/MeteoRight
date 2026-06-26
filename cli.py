@@ -458,6 +458,62 @@ def cmd_analyze(args: argparse.Namespace) -> int:
     return 0
 
 
+# Bundled sample shipped with the package, resolved relative to this file so it
+# works from any working directory and from an installed wheel.
+_SAMPLE_DIR = Path(__file__).resolve().parent / "examples" / "copenhagen_sample"
+_SAMPLE_VERIFICATION = _SAMPLE_DIR / "verification" / "verification.parquet"
+_SAMPLE_VARIABLES = "temperature_2m,wind_speed_10m,precipitation"
+
+
+def cmd_demo(args: argparse.Namespace) -> int:
+    """Run the offline demo against the bundled Copenhagen sample dataset.
+
+    No network and no backend required: it computes lead-time metrics from the
+    pre-built verification table, then renders lead-time and error-distribution
+    plots plus summary tables. This is the "it works" smoke test for a fresh
+    install.
+    """
+    if not _SAMPLE_VERIFICATION.exists():
+        console.print(
+            f"[red]Bundled sample not found at {_SAMPLE_VERIFICATION}[/red]\n"
+            "The package may be installed without its example data."
+        )
+        return 1
+
+    output = Path(getattr(args, "output", None) or (_SAMPLE_DIR / "out"))
+    metrics_dir = output / "metrics"
+
+    console.print("[bold]MeteoRight demo[/bold] — bundled Copenhagen sample (offline)")
+    console.print(f"  Verification: {_SAMPLE_VERIFICATION}")
+
+    # Step 1: metrics by lead time (drives the lead-time plots).
+    metrics_args = argparse.Namespace(
+        verification=str(_SAMPLE_VERIFICATION),
+        group_by="lead_hours",
+        metrics="mae,rmse,bias",
+        variables=_SAMPLE_VARIABLES,
+        output=str(metrics_dir),
+    )
+    if cmd_metrics(metrics_args) != 0:
+        return 1
+
+    # Step 2: plots + tables (lead-time from metrics, distributions from rows).
+    analyze_args = argparse.Namespace(
+        metrics_path=str(metrics_dir / "*.parquet"),
+        verification=str(_SAMPLE_VERIFICATION),
+        output=str(output),
+        variables=_SAMPLE_VARIABLES,
+        metrics="mae,rmse,bias",
+        plots="lead_time,distributions",
+        generate_tables=True,
+    )
+    if cmd_analyze(analyze_args) != 0:
+        return 1
+
+    console.print(f"\n[green]Demo complete.[/green] See figures and tables under: {output}")
+    return 0
+
+
 def cmd_pipeline(args: argparse.Namespace) -> int:
     """Run the full pipeline."""
     console.print("[bold]Running full pipeline[/bold]")
@@ -759,135 +815,40 @@ def cmd_grid_points(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 
 
-def _emit_json(result: dict) -> int:
-    """Print a tool result as JSON; exit 0 on success, 1 if it carries an error."""
-    import json
+_AGENT_COMMANDS = {
+    "ask",
+    "agent",
+    "chat",
+    "compare-models",
+    "describe-backend",
+    "geocode",
+    "resolve-area",
+    "list-models",
+    "list-variables",
+}
 
-    print(json.dumps(result, indent=2, ensure_ascii=False, default=str))
-    return 1 if result.get("error") else 0
 
-
-def cmd_ask(args: argparse.Namespace) -> int:
-    """Answer a forecast-accuracy question and emit JSON."""
-    from agent_tools import forecast_accuracy
-
-    metrics = tuple(m.strip() for m in args.metrics.split(",")) if args.metrics else ("mae", "rmse", "bias")
-    result = forecast_accuracy(
-        args.variable,
-        args.area,
-        model=args.model,
-        start=args.start,
-        end=args.end,
-        metrics=metrics,
-        backend_base_url=args.backend_base_url,
+def _agent_moved(command: str) -> int:
+    """Explain that the agent commands now live in the meteoright-agent package."""
+    console.print(
+        f"[yellow]'{command}' moved to the separate meteoright-agent package.[/yellow]\n"
+        "Install it and use the 'meteoright-agent' command:\n\n"
+        "    uv tool install meteoright-agent   # or: pip install meteoright-agent\n"
+        f"    meteoright-agent {command} ...\n\n"
+        "See https://github.com/Mumrah213/meteoright-agent"
     )
-    return _emit_json(result)
-
-
-def cmd_agent(args: argparse.Namespace) -> int:
-    """Drive the constrained LangGraph agent over a natural-language question."""
-    if args.graph:
-        from agent.run import mermaid
-
-        print(mermaid(args.backend_base_url))
-        return 0
-    if not args.question:
-        console.print("[red]Provide a question, or use --graph to print the diagram.[/red]")
-        return 1
-    if args.trace:
-        from agent.trace import render_flow
-
-        result = render_flow(args.question, console=console, backend_base_url=args.backend_base_url)
-        return 0 if result.answer else 1
-    from agent.run import answer
-
-    return _emit_json(answer(args.question, backend_base_url=args.backend_base_url))
-
-
-def cmd_chat(args: argparse.Namespace) -> int:
-    """Interactive REPL: ask questions and watch each flow through the graph nodes."""
-    from agent.trace import render_flow
-
-    # Probe the backend once and reuse the description for every question.
-    from agent_tools import describe_backend
-
-    console.print("[bold]MeteoRight agent chat[/bold] — ask about forecast accuracy. "
-                  "Ctrl-D or 'exit' to quit.\n")
-    backend_desc = describe_backend(args.backend_base_url)
-    if not backend_desc.get("reachable"):
-        console.print(f"[yellow]Warning: backend not reachable at {args.backend_base_url}; "
-                      "tools will return errors.[/yellow]\n")
-
-    while True:
-        try:
-            question = console.input("[bold cyan]you ›[/bold cyan] ").strip()
-        except (EOFError, KeyboardInterrupt):
-            console.print("\n[dim]bye[/dim]")
-            return 0
-        if not question:
-            continue
-        if question.lower() in ("exit", "quit", ":q"):
-            console.print("[dim]bye[/dim]")
-            return 0
-        console.print()
-        try:
-            render_flow(
-                question, console=console,
-                backend_base_url=args.backend_base_url, backend_desc=backend_desc,
-            )
-        except Exception as exc:  # keep the REPL alive on any failure
-            console.print(f"[red]error: {type(exc).__name__}: {exc}[/red]")
-        console.print()
-
-
-def cmd_compare_models(args: argparse.Namespace) -> int:
-    """Rank models by accuracy for a variable over an area; emit JSON."""
-    from agent_tools import compare_models
-
-    models = [m.strip() for m in args.models.split(",")] if args.models else None
-    result = compare_models(
-        args.variable,
-        args.area,
-        models=models,
-        metric=args.metric,
-        start=args.start,
-        end=args.end,
-        backend_base_url=args.backend_base_url,
-    )
-    return _emit_json(result)
-
-
-def cmd_describe_backend(args: argparse.Namespace) -> int:
-    from agent_tools.backend import describe_backend
-
-    return _emit_json(describe_backend(args.backend_base_url))
-
-
-def cmd_geocode(args: argparse.Namespace) -> int:
-    from agent_tools.geocoding import geocode_location
-
-    return _emit_json(geocode_location(args.name))
-
-
-def cmd_resolve_area(args: argparse.Namespace) -> int:
-    from agent_tools.areas import resolve_area
-
-    return _emit_json(resolve_area(args.area))
-
-
-def cmd_list_models(args: argparse.Namespace) -> int:
-    from agent_tools.models import list_models
-
-    return _emit_json(list_models(base_url=args.backend_base_url))
-
-
-def cmd_list_variables(args: argparse.Namespace) -> int:
-    from agent_tools.catalog import list_variables
-
-    return _emit_json(list_variables())
+    return 2
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Agent commands moved to the separate meteoright-agent package. Intercept
+    # them before argparse so the user gets a clear pointer instead of an
+    # "invalid choice" / "unrecognized arguments" error (these commands carry
+    # options like --graph that the core parser no longer knows about).
+    _args = sys.argv[1:] if argv is None else argv
+    if _args and _args[0] in _AGENT_COMMANDS:
+        return _agent_moved(_args[0])
+
     parser = argparse.ArgumentParser(
         description="MeteoRight: local Open-Meteo weather analysis laboratory",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -948,6 +909,17 @@ def main(argv: list[str] | None = None) -> int:
         "--plots", default="all", help="Plot families: seasonal,lead_time,distributions,all"
     )
     an.add_argument("--generate-tables", action="store_true")
+
+    # demo (offline, bundled sample)
+    demo_parser = subparsers.add_parser(
+        "demo",
+        help="Render plots from the bundled sample dataset (offline, no backend)",
+    )
+    demo_parser.add_argument(
+        "--output",
+        default=None,
+        help="Output directory (default: examples/copenhagen_sample/out)",
+    )
 
     # pipeline
     pl = subparsers.add_parser("pipeline", help="Run full pipeline")
@@ -1095,83 +1067,8 @@ def main(argv: list[str] | None = None) -> int:
     di_parser.add_argument("dataset_path", type=str, help="Path to dataset directory")
     di_parser.set_defaults(handler="dataset-info")
 
-    # ------------------------------------------------------------------
-    # Agent-facing tools (JSON output)
-    # ------------------------------------------------------------------
-    _DEFAULT_BACKEND = "http://127.0.0.1:8080/v1/forecast"
-
-    ask_parser = subparsers.add_parser(
-        "ask",
-        description="Answer a forecast-accuracy question, e.g. wind direction over an area.",
-        help="Answer a forecast-accuracy question (JSON)",
-    )
-    ask_parser.add_argument("--variable", required=True, help="e.g. temperature_2m, wind_direction_10m")
-    ask_parser.add_argument("--area", required=True, help='Place, list, or "Malmö-Copenhagen"')
-    ask_parser.add_argument("--model", default="ecmwf", help="Friendly model name (default: ecmwf)")
-    ask_parser.add_argument("--start", help="Start date YYYY-MM-DD (default: forecast/obs overlap)")
-    ask_parser.add_argument("--end", help="End date YYYY-MM-DD")
-    ask_parser.add_argument("--metrics", default="mae,rmse,bias", help="Comma-separated metrics")
-    ask_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND, help="Backend forecast URL")
-    ask_parser.set_defaults(handler=cmd_ask)
-
-    agent_parser = subparsers.add_parser(
-        "agent",
-        description="Answer a natural-language forecast-accuracy question via the constrained agent.",
-        help="Ask the agent a question (JSON)",
-    )
-    agent_parser.add_argument("question", nargs="?", help="Natural-language question")
-    agent_parser.add_argument(
-        "--graph", action="store_true", help="Print the agent graph as a mermaid diagram and exit"
-    )
-    agent_parser.add_argument(
-        "--trace", action="store_true",
-        help="Show the question's flow through the graph nodes instead of JSON"
-    )
-    agent_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
-    agent_parser.set_defaults(handler=cmd_agent)
-
-    chat_parser = subparsers.add_parser(
-        "chat",
-        description="Interactive REPL: ask the agent questions and watch the flow through nodes.",
-        help="Interactive agent chat with live node-flow trace",
-    )
-    chat_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
-    chat_parser.set_defaults(handler=cmd_chat)
-
-    cm_parser = subparsers.add_parser(
-        "compare-models",
-        description="Rank models by forecast accuracy for a variable over an area.",
-        help="Compare model accuracy (JSON)",
-    )
-    cm_parser.add_argument("--variable", required=True, help="e.g. temperature_2m")
-    cm_parser.add_argument("--area", required=True, help='Place, list, or "Malmö-Copenhagen"')
-    cm_parser.add_argument("--models", help="Comma-separated friendly names (default: all available)")
-    cm_parser.add_argument("--metric", default="mae", choices=["mae", "rmse", "bias"])
-    cm_parser.add_argument("--start", help="Start date YYYY-MM-DD")
-    cm_parser.add_argument("--end", help="End date YYYY-MM-DD")
-    cm_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
-    cm_parser.set_defaults(handler=cmd_compare_models)
-
-    db_parser = subparsers.add_parser(
-        "describe-backend", help="Probe backend models and coverage (JSON)"
-    )
-    db_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
-    db_parser.set_defaults(handler=cmd_describe_backend)
-
-    gc_parser = subparsers.add_parser("geocode", help="Resolve a place name to coordinates (JSON)")
-    gc_parser.add_argument("name", help="Place name, e.g. Malmö")
-    gc_parser.set_defaults(handler=cmd_geocode)
-
-    ra_parser = subparsers.add_parser("resolve-area", help="Resolve an area to a grid point (JSON)")
-    ra_parser.add_argument("area", help='Place, list, or "Malmö-Copenhagen"')
-    ra_parser.set_defaults(handler=cmd_resolve_area)
-
-    lm_parser = subparsers.add_parser("list-models", help="List available backend models (JSON)")
-    lm_parser.add_argument("--backend-base-url", default=_DEFAULT_BACKEND)
-    lm_parser.set_defaults(handler=cmd_list_models)
-
-    lv_parser = subparsers.add_parser("list-variables", help="List known variables (JSON)")
-    lv_parser.set_defaults(handler=cmd_list_variables)
+    # (Agent commands — ask/agent/chat/compare-models/etc. — are intercepted at
+    # the top of main() and routed to the moved-package message.)
 
     args = parser.parse_args(argv)
 
@@ -1198,6 +1095,7 @@ def main(argv: list[str] | None = None) -> int:
         "verify": cmd_verify,
         "metrics": cmd_metrics,
         "analyze": cmd_analyze,
+        "demo": cmd_demo,
         "pipeline": cmd_pipeline,
     }
 

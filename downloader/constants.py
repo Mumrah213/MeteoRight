@@ -5,6 +5,8 @@ import os
 # Public Open-Meteo endpoints used when no self-hosted backend is configured.
 PUBLIC_ARCHIVE_API = "https://archive-api.open-meteo.com/v1/archive"
 PUBLIC_SINGLE_RUNS_API = "https://single-runs-api.open-meteo.com/v1/forecast"
+PUBLIC_PREVIOUS_RUNS_API = "https://previous-runs-api.open-meteo.com/v1/forecast"
+PUBLIC_HISTORICAL_FORECAST_API = "https://historical-forecast-api.open-meteo.com/v1/forecast"
 
 # API base URLs.
 #
@@ -28,6 +30,12 @@ ARCHIVE_API = os.getenv("METEORIGHT_OPEN_METEO_ARCHIVE_API") or _endpoint_from_b
 SINGLE_RUNS_API = os.getenv("METEORIGHT_OPEN_METEO_SINGLE_RUNS_API") or _endpoint_from_base(
     "/v1/forecast", PUBLIC_SINGLE_RUNS_API
 )
+PREVIOUS_RUNS_API = os.getenv("METEORIGHT_OPEN_METEO_PREVIOUS_RUNS_API") or _endpoint_from_base(
+    "/v1/forecast", PUBLIC_PREVIOUS_RUNS_API
+)
+HISTORICAL_FORECAST_API = os.getenv(
+    "METEORIGHT_OPEN_METEO_HISTORICAL_FORECAST_API"
+) or _endpoint_from_base("/v1/forecast", PUBLIC_HISTORICAL_FORECAST_API)
 
 # Default variables
 DEFAULT_VARIABLES = ("temperature_2m", "precipitation")

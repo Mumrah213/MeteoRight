@@ -152,22 +152,27 @@ def main():
     print(f"Canary check started at {datetime.now(UTC).strftime('%Y-%m-%d %H:%M UTC')}")
     print()
 
-    # Capability summary from the shared runtime probe: which models the backend
-    # actually serves and over what date range. Complements the differentiation
-    # check below.
+    # Optional capability summary from the agent package's runtime probe: which
+    # models the backend serves and over what date range. Only runs if the
+    # separate meteoright-agent package is installed; the differentiation check
+    # below is self-contained and always runs.
     if base_url:
-        from agent_tools.backend import describe_backend
+        try:
+            from agent_tools.backend import describe_backend
+        except ImportError:
+            describe_backend = None
 
-        forecast_url = base_url.rstrip("/")
-        if not forecast_url.endswith("/forecast"):
-            forecast_url = f"{forecast_url}/v1/forecast"
-        desc = describe_backend(forecast_url)
-        print(f"Capability probe ({forecast_url}): reachable={desc['reachable']}")
-        for m in desc["models"]:
-            cov = m["coverage"]
-            window = f"{cov['start']}..{cov['end']}" if cov else "unknown"
-            print(f"  {m['backend_name']:30s} data {window}")
-        print()
+        if describe_backend is not None:
+            forecast_url = base_url.rstrip("/")
+            if not forecast_url.endswith("/forecast"):
+                forecast_url = f"{forecast_url}/v1/forecast"
+            desc = describe_backend(forecast_url)
+            print(f"Capability probe ({forecast_url}): reachable={desc['reachable']}")
+            for m in desc["models"]:
+                cov = m["coverage"]
+                window = f"{cov['start']}..{cov['end']}" if cov else "unknown"
+                print(f"  {m['backend_name']:30s} data {window}")
+            print()
 
     passed = run_canary(base_url)
 

@@ -1,10 +1,14 @@
-"""Thin wrappers for the self-hosted Open-Meteo backend.
+"""Thin wrappers for the Open-Meteo backend.
 
 These are simple, direct functions — no retry logic, no orchestration.
 Just query the API and return JSON or CSV.
 
-This module targets a local Open-Meteo instance running on 127.0.0.1:8080,
-which is used for development and self-hosted deployments.
+The base URL is resolved from ``METEORIGHT_OPEN_METEO_BASE_URL`` so the same
+functions work against the public Open-Meteo API (the default) or a self-hosted
+instance (e.g. ``http://127.0.0.1:8080``). Set the env var to point at a local
+backend:
+
+    export METEORIGHT_OPEN_METEO_BASE_URL="http://127.0.0.1:8080"
 
 Usage:
     >>> from api.fetch import fetch_forecast, fetch_history
@@ -13,11 +17,21 @@ Usage:
 """
 
 
+import os
+
 import requests
+
+# Public Open-Meteo host, used when no self-hosted backend is configured.
+PUBLIC_BASE_URL = "https://api.open-meteo.com"
+
+
+def _base_url() -> str:
+    """Resolve the Open-Meteo host, preferring a self-hosted backend if set."""
+    return (os.getenv("METEORIGHT_OPEN_METEO_BASE_URL") or PUBLIC_BASE_URL).rstrip("/")
 
 
 def _build_url(endpoint: str, params: dict) -> str:
-    """Build a full API URL targeting the self-hosted Open-Meteo backend."""
+    """Build a full API URL targeting the configured Open-Meteo backend."""
     # Normalize params: convert lists to comma-separated strings
     normalized = {}
     for k, v in params.items():
@@ -29,7 +43,7 @@ def _build_url(endpoint: str, params: dict) -> str:
     query = "&".join(
         f"{k}={requests.utils.quote(str(v), safe=',/')}" for k, v in normalized.items()
     )
-    return f"http://127.0.0.1:8080{endpoint}?{query}"
+    return f"{_base_url()}{endpoint}?{query}"
 
 
 def fetch_forecast(

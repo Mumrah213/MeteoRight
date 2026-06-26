@@ -111,18 +111,40 @@ export METEORIGHT_OPEN_METEO_HISTORICAL_FORECAST_API="https://historical-forecas
 
 ## Quick Start
 
-Requires Python 3.11+.
+Requires Python 3.11+. The recommended path uses [uv](https://docs.astral.sh/uv/):
 
 ```bash
 git clone <repo-url>
 cd meteoright
 
+uv sync                      # creates .venv and installs base + dev deps
+uv run meteoright --help
+```
+
+<details>
+<summary>Prefer pip / a manual venv?</summary>
+
+```bash
 python -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 ```
 
-Download a small Copenhagen example:
+</details>
+
+See it work immediately, with no network and no backend, using the bundled
+sample dataset:
+
+```bash
+uv run meteoright demo
+```
+
+This renders lead-time and error-distribution plots from a small pre-built
+Copenhagen verification dataset into `examples/copenhagen_sample/out/`.
+
+Then download a small Copenhagen example of your own (hits the public Open-Meteo
+API by default; set `METEORIGHT_OPEN_METEO_BASE_URL` to use a self-hosted
+backend — see `.env.example`):
 
 ```bash
 meteoright download \
@@ -184,32 +206,38 @@ Then open `showcase/README.md` for examples of the analysis outputs this repo is
 
 ## Python Examples
 
-Fetch observations and archived forecast runs:
+Fetch observations and an archived forecast run directly from the API client:
 
 ```python
-from src.core.pipeline import download_forecast, download_historical
+from datetime import datetime, timezone
 
-location = {"name": "Copenhagen", "lat": 55.605, "lon": 12.574}
+from downloader.api import fetch_observations, fetch_single_run
+
 variables = ("temperature_2m", "precipitation", "wind_speed_10m")
 
-download_historical(location, "2026-05-20", "2026-05-22", variables, "data/copenhagen_demo")
-download_forecast(
-    location,
-    "2026-05-20",
-    "2026-05-22",
-    variables,
-    ["ecmwf_ifs_single"],
-    "data/copenhagen_demo",
+observations = fetch_observations(
+    lat=55.605, lon=12.574,
+    start_date="2026-05-20", end_date="2026-05-22",
+    variables=variables,
+)
+forecast = fetch_single_run(
+    lat=55.605, lon=12.574,
+    run_time=datetime(2026, 5, 20, 0, tzinfo=timezone.utc),
+    variables=variables,
+    model="ecmwf_ifs_single",
 )
 ```
+
+(The `meteoright download` CLI command wraps these and writes normalized Parquet
+partitions under a data directory — see Quick Start above.)
 
 Align forecasts with observations and calculate lead-time error:
 
 ```python
 from pathlib import Path
 
-from src.historical.verification.aligner import align_forecasts_with_observations
-from src.historical.verification.loaders import load_forecasts, load_observations
+from verification.aligner import align_forecasts_with_observations
+from verification.loaders import load_forecasts, load_observations
 
 data_dir = Path("data/copenhagen_demo")
 variables = ("temperature_2m", "wind_speed_10m")
@@ -225,10 +253,11 @@ mae_by_lead = aligned.groupby("lead_hours")["temperature_error"].apply(lambda s:
 print(mae_by_lead.head())
 ```
 
-Use a local Open-Meteo backend directly:
+Fetch a forecast through the thin `forecast.fetch` wrapper (public API by
+default; set `METEORIGHT_OPEN_METEO_BASE_URL` to use a self-hosted backend):
 
 ```python
-from src.forecast.fetch import fetch_forecast
+from forecast.fetch import fetch_forecast
 
 data = fetch_forecast(
     55.605,
@@ -259,36 +288,38 @@ data = fetch_forecast(
 
 ```text
 meteoright/
-|-- cli.py                  # Command-line workflow for download, verify, metrics, analysis
-|-- src/
-|   |-- core/               # High-level pipeline helpers
-|   |-- forecast/           # Forecast clients, canonical records, local fetch wrappers
-|   `-- historical/         # Historical download, storage, verification, plotting
-|-- advanced_verification/  # Event verification, confusion matrices, skill scores
-|-- datasets/               # Curated dataset preparation helpers used by the CLI/tests
-|-- metrics/, plots/        # Top-level analysis helpers used by the current CLI
-|-- showcase/               # Curated publication figures
-|-- docs/images/            # Supporting README/documentation figures
-|-- tests/                  # Unit and integration tests
-`-- data/                   # Local generated datasets, ignored by Git
+|-- cli.py            # Command-line workflow: download, verify, metrics, analyze, demo
+|-- downloader/       # Open-Meteo API client (fetch, normalize, storage, constants)
+|-- forecast/         # Forecast fetch wrappers, canonical records, grid points, plotting
+|-- historical/       # Historical download/planning (reuses downloader.constants)
+|-- verification/     # Alignment, error columns, confusion matrices, skill scores
+|-- metrics/          # Metric computation and aggregation
+|-- plots/            # Lead-time, seasonal, and distribution plotting
+|-- analysis/         # Anomalies, degradation, extremes, seasonal patterns
+|-- datasets/         # Curated dataset preparation pipeline used by the CLI/tests
+|-- config/           # Location presets, variable sets, event definitions
+|-- util/             # Shared helpers (e.g. circular error for wind direction)
+|-- examples/         # Bundled sample dataset for the offline `meteoright demo`
+|-- showcase/         # Curated publication figures
+|-- tests/            # Unit and integration tests
+`-- data/             # Local generated datasets, ignored by Git
 ```
 
-## Agent
+The LangGraph agent lives in the separate `meteoright-agent` companion project.
+
+## Agent (separate package)
 
 A constrained LangGraph agent answers natural-language questions
 ("how accurate is the temperature forecast for the Malmö-Copenhagen area?",
-"which model is best?") by orchestrating the analysis tools within an explicit,
+"which model is best?") by orchestrating these analysis tools within an explicit,
 bounded graph — a whitelisted tool set, argument validation, a scope gate, and a
 step cap.
 
-```bash
-meteoright chat                          # interactive REPL with a live node-flow trace
-meteoright agent --trace "<question>"    # one-shot, shows the flow through the graph
-meteoright agent --graph                 # print the graph as a mermaid diagram
-```
-
-See [`agent/README.md`](agent/README.md) for the graph diagram, the loop, the
-guardrails, and LLM configuration.
+It lives in the companion project **`meteoright-agent`**, which depends on this
+lab and adds the LangGraph layer plus a bring-your-own LLM endpoint. It is opt-in;
+the core lab above runs without it. Install `meteoright-agent` and use the
+`meteoright-agent` command (`meteoright-agent chat`, `meteoright-agent agent
+--trace "<question>"`, `meteoright-agent agent --graph`).
 
 ## Data Model
 

@@ -23,6 +23,7 @@ dependencies = [
     "pandas>=2.0",
     "pyarrow>=14.0",
     "numpy>=1.24",
+    "scipy>=1.11",
     "httpx>=0.25",
     "matplotlib>=3.7",
     "rich>=13.0",
@@ -41,18 +42,31 @@ dev = [
     "hypothesis>=6.100",
     "ruff>=0.13",
 ]
-agent = [
-    "langgraph>=1.2",
-    "langchain-core>=1.4",
-    "langchain-openai>=1.2",
-]
+# The natural-language agent lives in the separate `meteoright-agent` package
+# (LangGraph + an OpenAI-compatible LLM). Install that to use `meteoright-agent`.
 
 [project.scripts]
 meteoright = "cli:main"
 
+# Top-level single-file modules that back the console script and CLI helpers.
+[tool.setuptools]
+py-modules = ["cli", "model_comparison", "model_canary"]
+
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*", "advanced_verification", "agent", "agent_tools", "analysis", "datasets", "downloader", "metrics", "plots", "util", "verification"]
+include = [
+    "analysis",
+    "config",
+    "data",
+    "datasets",
+    "downloader",
+    "forecast*",
+    "historical",
+    "metrics",
+    "plots",
+    "util",
+    "verification",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
