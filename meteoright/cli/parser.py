@@ -168,6 +168,17 @@ def build_parser() -> argparse.ArgumentParser:
         default=0.5,
         help="Fraction of rows used to learn skill; the rest is held out (default: 0.5)",
     )
+    bl.add_argument(
+        "--split",
+        choices=("temporal", "positional"),
+        default="temporal",
+        help=(
+            "How to divide train from test. 'temporal' (default) learns on the earliest "
+            "issue times and evaluates on the latest, so the result is a claim about "
+            "future performance. 'positional' splits on row order, which is only "
+            "chronological for single-location data (default: temporal)"
+        ),
+    )
     bl.add_argument("--output", help="Optional JSON path for the blend report")
 
     # Grid point finder

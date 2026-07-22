@@ -1,0 +1,4 @@
+{"timestamp": "2026-07-22T14:14:11.181799+00:00", "type": "observations", "model": null, "start_date": "2026-03-01", "end_date": "2026-03-31", "rows_downloaded": 744, "rows_skipped": 0}
+{"timestamp": "2026-07-22T14:14:13.125251+00:00", "type": "forecasts", "model": "ecmwf_ifs025", "start_date": "2026-03-01", "end_date": "2026-03-31", "rows_downloaded": 5208, "rows_skipped": 0}
+{"timestamp": "2026-07-22T14:14:29.586000+00:00", "type": "forecasts", "model": "icon_seamless", "start_date": "2026-03-01", "end_date": "2026-03-31", "rows_downloaded": 5208, "rows_skipped": 0}
+{"timestamp": "2026-07-22T14:14:30.889312+00:00", "type": "forecasts", "model": "gfs_seamless", "start_date": "2026-03-01", "end_date": "2026-03-31", "rows_downloaded": 5208, "rows_skipped": 0}

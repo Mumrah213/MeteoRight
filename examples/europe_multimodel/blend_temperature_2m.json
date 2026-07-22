@@ -1,0 +1,22 @@
+{
+  "variable": "temperature_2m",
+  "models": [
+    "ecmwf_ifs025",
+    "gfs_seamless",
+    "icon_seamless"
+  ],
+  "weights": {
+    "ecmwf_ifs025": 0.7557817239196793,
+    "gfs_seamless": 0.0,
+    "icon_seamless": 0.24421827608032068
+  },
+  "split": "temporal",
+  "train_rows": 209520,
+  "blended_mae": 1.1193842109937229,
+  "best_single_mae": 1.2229956838931135,
+  "best_single_model": "ecmwf_ifs025",
+  "mae_improvement_pct": -8.471941010418645,
+  "improvement_over_best": true,
+  "sample_size": 209448,
+  "rationale": "Evaluation for 'temperature_2m': Blending improved MAE by 8.5% (blended=1.119, best single=1.223)."
+}

@@ -1,0 +1,22 @@
+{
+  "variable": "wind_speed_10m",
+  "models": [
+    "ecmwf_ifs025",
+    "gfs_seamless",
+    "icon_seamless"
+  ],
+  "weights": {
+    "ecmwf_ifs025": 0.8923289806518884,
+    "gfs_seamless": 0.10767101934811173,
+    "icon_seamless": 0.0
+  },
+  "split": "temporal",
+  "train_rows": 210288,
+  "blended_mae": 3.168071829710849,
+  "best_single_mae": 3.2954408350458375,
+  "best_single_model": "ecmwf_ifs025",
+  "mae_improvement_pct": -3.8650065866898404,
+  "improvement_over_best": true,
+  "sample_size": 210192,
+  "rationale": "Evaluation for 'wind_speed_10m': Blending improved MAE by 3.9% (blended=3.168, best single=3.295)."
+}

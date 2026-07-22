@@ -1,0 +1,22 @@
+{
+  "variable": "precipitation",
+  "models": [
+    "ecmwf_ifs025",
+    "gfs_seamless",
+    "icon_seamless"
+  ],
+  "weights": {
+    "ecmwf_ifs025": 0.2275396418730616,
+    "gfs_seamless": 0.7724603581269384,
+    "icon_seamless": 0.0
+  },
+  "split": "temporal",
+  "train_rows": 209424,
+  "blended_mae": 0.10791280772500302,
+  "best_single_mae": 0.1129412438875183,
+  "best_single_model": "gfs_seamless",
+  "mae_improvement_pct": -4.452258527914981,
+  "improvement_over_best": true,
+  "sample_size": 209408,
+  "rationale": "Evaluation for 'precipitation': Blending improved MAE by 4.5% (blended=0.108, best single=0.113)."
+}

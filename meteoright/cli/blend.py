@@ -38,9 +38,13 @@ def cmd_blend(args: argparse.Namespace) -> int:
 
     # Pivot to shared targets: one row per (issue, target, location) with a
     # column per model. Only targets every model forecast are comparable.
+    # Identify the target by site, not by coordinates: each model reports its
+    # own grid cell, so keying on latitude/longitude leaves no target shared by
+    # every model. Fall back to coordinates only when there is no location_id.
+    location_keys = ["location_id"] if "location_id" in df.columns else ["latitude", "longitude"]
     keys = [
         k
-        for k in ["forecast_issue_time", "forecast_target_time", "latitude", "longitude"]
+        for k in ["forecast_issue_time", "forecast_target_time", *location_keys]
         if k in df.columns
     ]
     # The observation belongs to the target, not to a model. Rows for the same
@@ -63,8 +67,33 @@ def cmd_blend(args: argparse.Namespace) -> int:
     # ── Learn skill from a held-out training split ────────────────────────
     # The blend is evaluated only on rows whose skill it never saw, so the
     # weights cannot be informed by the observations they are scored against.
-    split = int(len(wide) * args.train_fraction)
-    train, test = wide.iloc[:split], wide.iloc[split:]
+    #
+    # The split is temporal by default: weights come from the earliest issue
+    # times and are scored on the latest. A positional split on row order is
+    # only chronological when the data covers a single location — with several
+    # sites the pivot index sorts by time *and* latitude, so cutting on row
+    # position slices through the site ordering and silently turns the result
+    # into "learn from these sites, predict those sites".
+    split_mode = getattr(args, "split", "temporal")
+    if split_mode == "temporal" and "forecast_issue_time" in wide.columns:
+        wide = wide.sort_values("forecast_issue_time", kind="mergesort").reset_index(drop=True)
+        cutoff = wide["forecast_issue_time"].quantile(
+            args.train_fraction, interpolation="nearest"
+        )
+        train = wide[wide["forecast_issue_time"] <= cutoff]
+        test = wide[wide["forecast_issue_time"] > cutoff]
+        console.print(
+            f"  Temporal split at {cutoff:%Y-%m-%d %H:%M} UTC — "
+            f"train {len(train)} rows, held out {len(test)}"
+        )
+    else:
+        if split_mode == "temporal":
+            console.print(
+                "[yellow]No forecast_issue_time column; falling back to a positional "
+                "split.[/yellow]"
+            )
+        split = int(len(wide) * args.train_fraction)
+        train, test = wide.iloc[:split], wide.iloc[split:]
     if train.empty or test.empty:
         console.print("[red]Not enough rows to split into train and test.[/red]")
         return 1
@@ -134,6 +163,7 @@ def cmd_blend(args: argparse.Namespace) -> int:
                     "variable": variable,
                     "models": models,
                     "weights": weight_by_model,
+                    "split": split_mode,
                     "train_rows": len(train),
                     "blended_mae": result.blended_mae,
                     "best_single_mae": result.best_single_mae,

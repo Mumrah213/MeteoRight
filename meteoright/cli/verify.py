@@ -41,9 +41,9 @@ def cmd_verify(args: argparse.Namespace) -> int:
 
     method = getattr(args, "interpolate", "none")
     if method != "none":
-        from verification.interpolate_frames import interpolate_forecasts_to_observations
+        from verification.interpolate_frames import interpolate_multi_site
 
-        forecasts, report = interpolate_forecasts_to_observations(
+        forecasts, report = interpolate_multi_site(
             forecasts, observations, variables, method=method
         )
         if report.grid_points < 4:
@@ -58,9 +58,15 @@ def cmd_verify(args: argparse.Namespace) -> int:
                 f"mean offset {report.mean_offset_km:.2f} km"
             )
 
+    # Multi-location datasets must join on location as well as time, or every
+    # site's forecast matches every site's observation and the row count fans
+    # out by the number of locations.
+    by_location = "location_id" in forecasts.columns and "location_id" in observations.columns
+
     # Prepare columns
     obs_rename = {v: f"observed_{v}" for v in variables if v in observations.columns}
-    obs_df = observations[["observation_time"] + list(obs_rename.keys())].copy()
+    obs_keys = ["observation_time"] + (["location_id"] if by_location else [])
+    obs_df = observations[obs_keys + list(obs_rename.keys())].copy()
     obs_df = obs_df.rename(columns=obs_rename)
 
     fcst_cols = [
@@ -71,15 +77,18 @@ def cmd_verify(args: argparse.Namespace) -> int:
         "latitude",
         "longitude",
         "elevation",
-    ] + [v for v in variables if v in forecasts.columns]
+    ]
+    if by_location:
+        fcst_cols.append("location_id")
+    fcst_cols += [v for v in variables if v in forecasts.columns]
     fcst_rename = {v: f"forecast_{v}" for v in variables if v in forecasts.columns}
     fcst_df = forecasts[fcst_cols].copy()
     fcst_df = fcst_df.rename(columns=fcst_rename)
 
-    # Join on time
-    merged = pd.merge(
-        fcst_df, obs_df, left_on="forecast_target_time", right_on="observation_time", how="left"
-    )
+    # Join on time (and location, when the dataset covers more than one site)
+    left_keys = ["forecast_target_time"] + (["location_id"] if by_location else [])
+    right_keys = ["observation_time"] + (["location_id"] if by_location else [])
+    merged = pd.merge(fcst_df, obs_df, left_on=left_keys, right_on=right_keys, how="left")
 
     # Compute errors
     for var in variables:

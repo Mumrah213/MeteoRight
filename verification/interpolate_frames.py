@@ -47,6 +47,68 @@ def _target_location(observations: pd.DataFrame) -> tuple[float, float] | None:
     return float(points.iloc[0]["latitude"]), float(points.iloc[0]["longitude"])
 
 
+def interpolate_multi_site(
+    forecasts: pd.DataFrame,
+    observations: pd.DataFrame,
+    variables: list[str],
+    *,
+    method: Method = "bilinear",
+) -> tuple[pd.DataFrame, InterpolationReport]:
+    """Interpolate each site independently, then recombine.
+
+    The single-site path below needs exactly one observation location, because
+    that location is the interpolation target. A multi-site dataset carries one
+    target per ``location_id``, so each site is interpolated on its own grid
+    and the results are concatenated. Sites whose grids are too sparse to
+    interpolate keep their native values, which the aggregate report records
+    via ``grid_points``.
+    """
+    if "location_id" not in forecasts.columns or "location_id" not in observations.columns:
+        return interpolate_forecasts_to_observations(
+            forecasts, observations, variables, method=method
+        )
+
+    # Grid-corner points are downloaded as separate locations named
+    # "<site>__<model>__c<n>" so the storage layer treats them as ordinary
+    # points. Collapse them back onto the site they surround, so a site's
+    # corners interpolate onto that site's observation.
+    forecasts = forecasts.copy()
+    forecasts["location_id"] = forecasts["location_id"].str.split("__").str[0]
+
+    frames: list[pd.DataFrame] = []
+    grid_points = 0
+    targets = 0
+    offsets: list[float] = []
+    max_offset = 0.0
+    present = tuple(v for v in variables if v in forecasts.columns)
+
+    for site, site_forecasts in forecasts.groupby("location_id", sort=False):
+        site_observations = observations[observations["location_id"] == site]
+        if site_observations.empty:
+            frames.append(site_forecasts)
+            continue
+
+        interpolated, report = interpolate_forecasts_to_observations(
+            site_forecasts, site_observations, variables, method=method
+        )
+        frames.append(interpolated)
+        grid_points += report.grid_points
+        targets += report.target_points
+        if report.grid_points:
+            offsets.append(report.mean_offset_km)
+            max_offset = max(max_offset, report.max_offset_km)
+
+    combined = pd.concat(frames, ignore_index=True) if frames else forecasts
+    return combined, InterpolationReport(
+        method=method,
+        grid_points=grid_points,
+        target_points=targets,
+        mean_offset_km=float(np.mean(offsets)) if offsets else 0.0,
+        max_offset_km=max_offset,
+        variables=present,
+    )
+
+
 def interpolate_forecasts_to_observations(
     forecasts: pd.DataFrame,
     observations: pd.DataFrame,
@@ -134,7 +196,13 @@ def _interpolate_one_model(
     grid_lon = snap_to_lines(rows["longitude"].to_numpy(), lon_lines)
 
     frame = rows.assign(_glat=grid_lat, _glon=grid_lon)
-    index_key = "forecast_target_time" if "forecast_target_time" in frame.columns else keys[0]
+    # A forecast is identified by issue time *and* valid time: the same hour is
+    # forecast repeatedly at different leads. Pivoting on valid time alone
+    # collapses every lead into one value, which silently replaces the whole
+    # lead-time dimension with whichever row happened to sort first.
+    index_key = [k for k in ("forecast_issue_time", "forecast_target_time") if k in frame.columns]
+    if not index_key:
+        index_key = [keys[0]]
 
     for variable in variables:
         pivot = frame.pivot_table(
@@ -156,7 +224,11 @@ def _interpolate_one_model(
             cube, lats, lons, target_lat, target_lon, method if use_bilinear else "idw", circular
         )
         mapped = pd.Series(values, index=pivot.index)
-        result[variable] = result[index_key].map(mapped).to_numpy()
+        if len(index_key) == 1:
+            lookup = result[index_key[0]]
+        else:
+            lookup = pd.MultiIndex.from_frame(result[index_key])
+        result[variable] = mapped.reindex(lookup).to_numpy()
 
     return result.drop(columns=[c for c in ("_glat", "_glon") if c in result.columns])
 
