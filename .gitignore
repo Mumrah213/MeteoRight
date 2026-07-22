@@ -40,8 +40,10 @@ htmlcov/
 .tox/
 .nox/
 
-# Data files (generated)
-/data/
+# Data files (generated). /data is also a source package, so ignore its
+# generated contents but keep the Python modules tracked.
+/data/*
+!/data/*.py
 /output/
 /outputs/
 /storage/
@@ -60,6 +62,10 @@ htmlcov/
 # Local caches
 cache/
 **/cache/
+
+# Generated Markdown previews
+readme-preview.html
+*-preview.html
 
 # Temporary files
 *.tmp

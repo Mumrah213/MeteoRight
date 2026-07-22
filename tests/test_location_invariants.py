@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 from verification.location import validate_location_compatibility
-from src.analysis.alignment import align
+from analysis.alignment import align
 
 
 def test_accepts_nearby_single_grid_points():

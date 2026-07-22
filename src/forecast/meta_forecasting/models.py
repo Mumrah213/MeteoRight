@@ -394,8 +394,10 @@ class MetaEvaluationResult(BaseModel):
     best_single_rmse: float | None = None
     best_single_model: str | None = None
 
-    # Improvement metrics
-    mae_improvement_pct: float | None = None  # Negative = blended is worse
+    # Improvement metrics, as (blended - best_single) / best_single * 100.
+    # These are error deltas, so NEGATIVE means the blend has lower error
+    # (better) and positive means the blend is worse than the best model.
+    mae_improvement_pct: float | None = None
     rmse_improvement_pct: float | None = None
     improvement_over_best: bool = False  # True if blended outperforms best single
 

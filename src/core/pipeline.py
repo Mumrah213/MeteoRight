@@ -26,9 +26,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from ..historical.api import fetch_observations, fetch_single_run
-from ..historical.normalize import json_to_forecast_df, json_to_observation_df
-from ..historical.storage import (
+from historical.api import fetch_observations, fetch_single_run
+from historical.normalize import json_to_forecast_df, json_to_observation_df
+from historical.storage import (
     write_attribution,
     write_download_log,
     write_forecasts,
@@ -248,8 +248,8 @@ class PipelineOrchestrator:
         Uses v2 verification logic to compare forecast models
         against observations.
         """
-        from ..historical.verification.aligner import ForecastAligner
-        from ..historical.verification.validator import (
+        from verification.aligner import ForecastAligner
+        from verification.validator import (
             ForecastValidator,
         )
 
@@ -287,9 +287,9 @@ class PipelineOrchestrator:
         Uses v2 analysis modules for anomalies, extremes,
         and seasonal pattern detection.
         """
-        from ..historical.analysis.anomalies import detect_anomalies
-        from ..historical.analysis.extremes import detect_extremes
-        from ..historical.analysis.seasonal_patterns import detect_seasonal_patterns
+        from analysis.anomalies import detect_anomalies
+        from analysis.extremes import detect_extremes
+        from analysis.seasonal_patterns import detect_seasonal_patterns
 
         results = {}
 
@@ -351,7 +351,7 @@ def download_historical(
 
     Wrapper around v2 observation ingestion logic.
     Does NOT contain ingestion business logic — delegates to
-    src.historical.api and src.historical.storage.
+    historical.api and historical.storage.
 
     Args:
         location: Dict with name, lat, lon.
@@ -385,7 +385,7 @@ def download_forecast(
 
     Wrapper around archived forecast run ingestion.
     Does NOT contain ingestion business logic — delegates to
-    src.historical.api, src.historical.normalize, and src.historical.storage.
+    historical.api, historical.normalize, and historical.storage.
 
     Args:
         location: Dict with name, lat, lon.

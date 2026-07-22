@@ -25,6 +25,7 @@ dependencies = [
     "numpy>=1.24",
     "httpx>=0.25",
     "matplotlib>=3.7",
+    "scipy>=1.11",
     "rich>=13.0",
     "pydantic>=2.0",
     "pydantic-settings>=2.0",
@@ -43,11 +44,11 @@ dev = [
 ]
 
 [project.scripts]
-meteoright = "cli:main"
+meteoright = "meteoright.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["src*", "advanced_verification", "analysis", "datasets", "downloader", "metrics", "plots", "verification"]
+include = ["meteoright*", "src*", "advanced_verification", "analysis", "data", "datasets", "downloader", "historical", "metrics", "plots", "verification"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

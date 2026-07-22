@@ -9,14 +9,27 @@ plot.
 
 ## Core Figures
 
-- `wind_composite_interpolated_linear_nearest.png` shows wind-speed, gust, and
-  direction verification across lead time and space after grid interpolation.
-- `wind_composite_forecast_observation_grid.png` shows the forecast and
-  observation grid points used before interpolation.
-- `wind_interpolation_effect.png` compares native grid-point verification with
-  interpolated verification.
-- `wind_interpolation_schematic.png` explains why interpolation changes the
-  verification question.
+- `wind_composite.png` is the full verification composite: error against lead
+  time for speed, gusts and direction; where wind-speed error sits at three
+  lead bands on a shared scale; and how much each site's error depends on lead
+  time. Regenerate with `python showcase/make_wind_composite_figure.py`.
+- `interpolation_schematic.png` explains the geometry of bilinear
+  interpolation on one idealised grid cell. It is a diagram rather than a
+  measurement, and says so. Regenerate with
+  `python showcase/make_interpolation_schematic.py`.
+- `interpolation_map.png` is the spatial view: model grid points against the
+  observation sites they are verified at, where the gain lands on the map, and
+  what predicts it. Regenerate with
+  `python showcase/make_interpolation_map_figure.py`.
+- `interpolation_effect.png` compares native-grid verification against
+  verification after forecasts are interpolated onto the observation location,
+  across 23 sites. Regenerate with
+  `python showcase/make_interpolation_figure.py` — it reads the bundled grid
+  sample, so it needs no downloads.
+- `blend_vs_best_single.png` compares an adaptively blended forecast against
+  each single model on held-out targets, for three variables. Regenerate it
+  with `python showcase/make_blend_figure.py` — it reads the bundled
+  verification sample, so it needs no downloads.
 
 ### Reproduce the Basic Lead-Time Plot
 
@@ -59,9 +72,9 @@ meteoright analyze \
   --output data/copenhagen_demo/analysis
 ```
 
-This creates standard lead-time and error-distribution figures. The polished
-composite figures in this folder use the same verification idea on larger local
-grid runs.
+This creates standard lead-time and error-distribution figures. The curated
+figures in this folder apply the same verification idea to a larger local grid
+run, bundled as `examples/copenhagen_grid_sample`.
 
 ### Find Grid Points for a Spatial Run
 
@@ -77,12 +90,14 @@ meteoright grid-points \
 
 ## Event Verification
 
-- `precipitation_event_confusion.png` asks whether predicted rain events
-  happened, with and without interpolation.
-- `frost_event_confusion.png` applies the same event-verification framing to
-  frost.
-- `precipitation_event_investigation.png` shows a precipitation-focused event
-  investigation.
+- `event_verification.png` turns the forecast into a yes/no question — was the
+  hour dry? — and reports the confusion matrix, per-model skill, and how both
+  move with lead time. Regenerate with
+  `python showcase/make_event_figure.py`.
+
+  The bundled sample is May 2026, so it carries no frost: a frost figure would
+  need a winter download. Switch `EVENT` in the script to `frost` once you
+  have one.
 
 ### Reproduce an Event Verification Table
 
@@ -113,22 +128,13 @@ interpolated verification.
 
 ## Error Structure
 
-- `wind_error_percentile_heatmap_interpolated.png` shows the distribution of
-  wind errors by percentile and lead time.
-- `wind_error_quantiles_interpolated.png` summarizes wind-error tails across
-  lead windows.
-- `error_correlation_matrix_interpolated_composite.png` shows whether locations
-  that are hard for one variable are also hard for others.
-
-## Surface Variables
-
-- `surface_composite_interpolated_linear_nearest.png` extends the grid-analysis
-  framing to temperature, relative humidity, and precipitation.
-- `surface_composite_forecast_observation_grid.png` shows the same variables
-  before interpolation.
+- `wind_error_structure.png` combines three views of the same error field: the
+  error distribution native vs interpolated, error percentiles by lead time,
+  and whether sites that are hard for one variable are hard for others.
+  Regenerate with `python showcase/make_error_structure_figure.py`.
 
 ## Monthly Skill
 
-- `monthly_lead_mae_heatmap_interpolated_linear_nearest.png` shows how
-  lead-time error varies by month after interpolation.
-- `monthly_lead_mae_heatmap.png` is the native-grid comparison.
+- `monthly_lead_skill.png` shows wind-speed MAE by target month and lead time,
+  native and interpolated on a shared colour scale. Regenerate with
+  `python showcase/make_monthly_heatmap_figure.py`.

@@ -19,6 +19,44 @@ logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Physically plausible value ranges
+# ---------------------------------------------------------------------------
+
+# Inclusive [min, max] bounds per variable, in the units Open-Meteo returns.
+# These are deliberately liberal: the goal is to catch unit errors, sentinel
+# values and corrupt rows, not to flag unusual-but-real weather.
+PLAUSIBLE_RANGES: dict[str, tuple[float, float]] = {
+    # Temperature (°C)
+    "temperature_2m": (-60.0, 60.0),
+    "temperature_80m": (-60.0, 60.0),
+    "temperature_100m": (-60.0, 70.0),
+    "temperature_1200m": (-80.0, 80.0),
+    "temperature_1800m": (-80.0, 80.0),
+    "dew_point_2m": (-60.0, 60.0),
+    # Precipitation (mm)
+    "precipitation": (0.0, 100.0),
+    "precipitation_total": (0.0, 1000.0),
+    # Wind (m/s, degrees)
+    "wind_speed_10m": (0.0, 150.0),
+    "wind_speed_100m": (0.0, 150.0),
+    "wind_direction_10m": (0.0, 360.0),
+    "wind_direction_100m": (0.0, 360.0),
+    # Pressure (Pa)
+    "surface_pressure": (80000.0, 110000.0),
+    "sea_level_pressure": (87000.0, 109000.0),
+    # Humidity and cloud (%)
+    "relative_humidity_2m": (0.0, 100.0),
+    "cloud_coverage": (0.0, 100.0),
+    # Snow (m, mm)
+    "snow_depth": (0.0, 10.0),
+    "snowfall": (0.0, 100.0),
+    # Radiation (W/m²)
+    "direct_radiation": (0.0, 1500.0),
+    "diffuse_radiation": (0.0, 1500.0),
+}
+
+
+# ---------------------------------------------------------------------------
 # Validation issue dataclass
 # ---------------------------------------------------------------------------
 
@@ -68,6 +106,7 @@ class VerificationValidator:
             self._check_duplicate_observations(df),
             self._check_lead_times(df),
             self._check_timestamp_gaps(df),
+            self._check_value_ranges(df),
         ]
         issues = []
         for check_issues in checks:
@@ -250,6 +289,57 @@ class VerificationValidator:
                 severity="error",
                 check="lead_times",
                 message=f"Impossible lead times: {'; '.join(parts)}",
+                count=total,
+            )
+        ]
+
+    def _check_value_ranges(self, df: pd.DataFrame) -> list[ValidationIssue]:
+        """Check forecast and observed values against physical bounds.
+
+        Values outside PLAUSIBLE_RANGES usually indicate a unit mismatch, an
+        unmasked sentinel (e.g. -999) or a corrupt row rather than real
+        weather. Variables without a known range are skipped, as are NaNs
+        (missing observations are reported by _check_missing_observations).
+        """
+        checked = 0
+        offenders: list[str] = []
+        total = 0
+
+        for variable in self.variables:
+            bounds = PLAUSIBLE_RANGES.get(variable)
+            if bounds is None:
+                continue
+            vmin, vmax = bounds
+
+            for col in (f"forecast_{variable}", f"observed_{variable}"):
+                if col not in df.columns:
+                    continue
+                checked += 1
+                values = pd.to_numeric(df[col], errors="coerce")
+                out_of_range = values.notna() & ((values < vmin) | (values > vmax))
+                count = int(out_of_range.sum())
+                if count > 0:
+                    total += count
+                    offenders.append(f"{count} in {col} outside [{vmin}, {vmax}]")
+
+        if checked == 0:
+            return []
+
+        if total == 0:
+            return [
+                ValidationIssue(
+                    severity="info",
+                    check="value_ranges",
+                    message=f"All values within physical range across {checked} column(s)",
+                    count=0,
+                )
+            ]
+
+        return [
+            ValidationIssue(
+                severity="error",
+                check="value_ranges",
+                message=f"Physically implausible values: {'; '.join(offenders)}",
                 count=total,
             )
         ]

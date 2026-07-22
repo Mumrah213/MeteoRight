@@ -191,26 +191,18 @@ class DynamicWeightingEngine:
 
         for model_name in model_names:
             base_weight = normalized[model_name]
+            model_scores = raw_scores.get(model_name, {})
 
             w = ModelWeight(
                 model_name=model_name,
                 weight=base_weight,  # Will be normalized
-                historical_skill_contribution=scores["historical_skill"]
-                * self._historical_skill_weight
-                if model_name in raw_scores
-                else 0.0,
-                recent_skill_contribution=scores["recent_skill"] * self._recent_skill_weight
-                if model_name in raw_scores
-                else 0.0,
-                coverage_contribution=scores["coverage"] * self._coverage_weight
-                if model_name in raw_scores
-                else 0.0,
-                stability_contribution=scores["stability"] * self._stability_weight
-                if model_name in raw_scores
-                else 0.0,
-                rationale=self._build_rationale(
-                    model_name, raw_scores[model_name] if model_name in raw_scores else {}
-                ),
+                historical_skill_contribution=model_scores.get("historical_skill", 0.0)
+                * self._historical_skill_weight,
+                recent_skill_contribution=model_scores.get("recent_skill", 0.0)
+                * self._recent_skill_weight,
+                coverage_contribution=model_scores.get("coverage", 0.0) * self._coverage_weight,
+                stability_contribution=model_scores.get("stability", 0.0) * self._stability_weight,
+                rationale=self._build_rationale(model_name, model_scores),
                 computed_at=datetime.now(),
                 weighting_method="adaptive_historical",
             )

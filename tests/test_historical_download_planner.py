@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import pandas as pd
 
-from src.historical.api import previous_run_variable_names
-from src.historical.download_planner import (
+from historical.api import previous_run_variable_names
+from historical.download_planner import (
     DownloadTask,
     LocationSpec,
     _validate_response_location,
     build_download_plan,
 )
-from src.historical.normalize import json_to_previous_runs_forecast_df
-from src.historical.storage import write_forecasts, write_observations
+from historical.normalize import json_to_previous_runs_forecast_df
+from historical.storage import write_forecasts, write_observations
 
 
 def test_previous_run_variable_names():

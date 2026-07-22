@@ -1,0 +1,40 @@
+Testing 33 models...
+  Location: (55.605, 12.574)
+  Variable: temperature_2m
+  Run time: 2025-12-01T00:00
+
+  [ 1/33] access_g                  OK 168h, 0h lead
+  [ 2/33] aifs_0p25_single          OK 168h, 0h lead
+  [ 3/33] aigfs                     OK 168h, 0h lead
+  [ 4/33] arome_france              OK 168h, 0h lead
+  [ 5/33] arome_france_hd           OK 168h, 0h lead
+  [ 6/33] arpge_europe              OK 168h, 0h lead
+  [ 7/33] arpge_world               OK 168h, 0h lead
+  [ 8/33] ecmwf_ifs_0p25            OK 168h, 0h lead
+  [ 9/33] ecmwf_ifs_0p4             OK 168h, 0h lead
+  [10/33] ecmwf_ifs_hres            OK 168h, 0h lead
+  [11/33] gem_global                OK 168h, 0h lead
+  [12/33] gem_regional              OK 168h, 0h lead
+  [13/33] gfs                       OK 168h, 0h lead
+  [14/33] gfs_grapes                OK 168h, 0h lead
+  [15/33] gfs_graphcast             OK 168h, 0h lead
+  [16/33] gsm                       OK 168h, 0h lead
+  [17/33] harmonie_arome_dini       OK 168h, 0h lead
+  [18/33] harmonie_arome_europe     OK 168h, 0h lead
+  [19/33] harmonie_arome_netherlands OK 168h, 0h lead
+  [20/33] hgefs                     OK 168h, 0h lead
+  [21/33] hrdps_continental         OK 168h, 0h lead
+  [22/33] hrrr                      OK 168h, 0h lead
+  [23/33] icon                      OK 168h, 0h lead
+  [24/33] icon_ch1                  OK 168h, 0h lead
+  [25/33] icon_ch2                  OK 168h, 0h lead
+  [26/33] icon_d2                   OK 168h, 0h lead
+  [27/33] icon_eu                   OK 168h, 0h lead
+  [28/33] met_nordic                OK 168h, 0h lead
+  [29/33] msm                       OK 168h, 0h lead
+  [30/33] nam                       OK 168h, 0h lead
+  [31/33] nbm                       OK 168h, 0h lead
+  [32/33] ukmo_global               OK 168h, 0h lead
+  [33/33] ukmo_ukv                  OK 168h, 0h lead
+
+Results: 33 OK, 0 FAIL out of 33
