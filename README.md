@@ -30,25 +30,44 @@ The goal is simple: ask a weather question, get to a plot with verified data qui
 
 The `showcase/` folder contains the curated figures to showcase what can be achieved by a single CLI command.
 
-E.g., it is straightforward to generate the following plot showing the accuracy of wind-related variables in the Malmö/Copenhagen area.
-![Wind forecast verification grid analysis](showcase/wind_composite_interpolated_linear_nearest.png)
+A cornerstone of the MeteoRight analysis scheme is grid interpolation. A forecast
+lives at a model grid point; an observation lives wherever the station is. Comparing
+them directly charges the model for a spatial mismatch it never had a chance to get
+right, so `meteoright verify --interpolate bilinear` estimates the forecast *at the
+observation location* before computing any error.
 
-A cornerstone of the MeteoRight analysis scheme is the grid interpolation, which minimizes the errors from the mismatch between the forecast and the observation grid - and the mismatch between the grids can be included in geoplots using a single CLI flag
-![Interpolation effect on wind verification](showcase/surface_composite_forecast_observation_grid.png)
+Around Copenhagen the two sit a median 4.5 km apart, and interpolation changes the
+answer most where that gap is widest — not uniformly across the map.
+![Where grid interpolation changes the answer](showcase/interpolation_map.png)
 
-Since most available observations are on land, whereas forecasts are everywhere, the interpolation
-can have significant effects on coastal areas
-![Interpolation effect on wind verification](showcase/wind_interpolation_effect.png)
+Measured over a year at 23 sites around Copenhagen against a 24-point ECMWF IFS
+0.25° grid, this removes 8.2% of wind-speed error and 8.7% of temperature error —
+and the gain grows with the distance between grid point and station, which is
+exactly the error it is meant to remove.
 
-Studying e.g., the mean absolute error (MAE) as a factor of lead time - averaged across an entire year - the decay in forecast accuracy with lead time is clear
-![Precipitation event verification](showcase/wind_error_quantiles_interpolated.png)
-and to answer questions like ***are there months which are better/worse in terms of forecast accuracy for a given variable?*** one can generate heat maps like this
-![Precipitation event verification](showcase/monthly_lead_mae_heatmap.png)
+![Effect of interpolating forecasts onto observation locations](showcase/interpolation_effect.png)
+
+Error grows with lead time, but not evenly: the tail grows faster than the
+median, so the typical forecast degrades far more slowly than the worst one. The
+same view also asks whether a location that is hard for wind is hard for
+temperature — here it is not.
+![Wind error structure](showcase/wind_error_structure.png)
+
+To answer questions like ***are some months simply harder to forecast?*** the
+same errors can be laid out by month and lead time. January is the hardest month
+for wind around Copenhagen and June the easiest, and interpolation lifts the
+whole surface rather than any single cell.
+![Wind-speed skill by month and lead time](showcase/monthly_lead_skill.png)
 
 Event-based verification turns weather questions into yes/no outcomes: forecast
 rain, observed rain, missed event, false alarm.
 
-![Precipitation event verification](showcase/precipitation_event_confusion.png)
+![Event verification](showcase/event_verification.png)
+
+The geometry behind `--interpolate` is worth seeing on its own: a model grid
+point rarely lands on the observation, and bilinear weighting places the
+forecast where the measurement actually is.
+![How grid interpolation works](showcase/interpolation_schematic.png)
 
 While Copenhagen was chosen as a demo area, the methodology can be applied anywhere on the globe.
 
@@ -66,8 +85,7 @@ While Copenhagen was chosen as a demo area, the methodology can be applied anywh
 ## Open-Meteo Backend
 
 MeteoRight works with the public Open-Meteo APIs by default. That is the easiest
-way to try the project: no local backend is required for
-non-commercial use. This method is however, strongly rate-limited.
+way to try the project: no local backend is required for non-commercial use. This method is however, strongly rate-limited.
 
 For larger investigations, the fast path is a local Open-Meteo backend. The
 upstream server is open source at
@@ -254,23 +272,82 @@ data = fetch_forecast(
   variables.
 - **Model comparison**: compare model behavior on shared targets rather than
   isolated downloads.
+- **Adaptive blending**: combine models by historical skill and measure whether
+  the blend beats the best single model.
+
+## Adaptive Model Blending
+
+Comparing models answers *which one is best*. Blending asks a different
+question: *can several mediocre models beat the best single one?* When model
+errors are partly independent, a skill-weighted average cancels some of that
+error out.
+
+`meteoright blend` learns each model's skill on a training split, weights the
+models accordingly, then blends and scores the **held-out** rows — so the
+weights are never informed by the observations they are judged against:
+
+A verification sample is bundled with the repo, so this runs on a fresh clone
+with no downloads and no API key:
+
+```bash
+meteoright blend \
+  --verification examples/copenhagen_sample/verification/verification.parquet \
+  --variable temperature_2m
+```
+
+```text
+  340 shared targets across 3 models: dwd_icon, ecmwf_ifs025, gfs_seamless
+    dwd_icon                 train MAE = 1.020
+    ecmwf_ifs025             train MAE = 0.903
+    gfs_seamless             train MAE = 1.070
+──────────────────────────── Weights ─────────────────────────────
+  ecmwf_ifs025   0.791   strong historical skill (score=1.00); stable forecasts
+  dwd_icon       0.209   strong historical skill (score=0.89); stable forecasts
+  gfs_seamless   0.000   strong historical skill (score=0.84); stable forecasts
+──────────────────────── Held-out evaluation ─────────────────────
+  Blended MAE      : 0.7414
+  Best single MAE  : 0.9700 (ecmwf_ifs025)
+  Blending helped: 23.6% lower error
+  Evaluated on 170 held-out targets
+```
+
+![Blended forecast vs. best single model](showcase/blend_vs_best_single.png)
+
+Blending helps where model errors are partly independent, and does nothing
+where they are correlated. Temperature and wind gain 24% and 32%;
+precipitation gains nothing, because when a convective shower is misplaced all
+three models tend to misplace it the same way, so averaging cancels no error.
+That null result is reported as plainly as the wins.
+
+Every weight carries a plain-language rationale — there is no black box, and
+no deep learning. Regenerate the figure with
+`python showcase/make_blend_figure.py`.
 
 ## Project Structure
 
 ```text
 meteoright/
-|-- cli.py                  # Command-line workflow for download, verify, metrics, analysis
-|-- src/
-|   |-- core/               # High-level pipeline helpers
-|   |-- forecast/           # Forecast clients, canonical records, local fetch wrappers
-|   `-- historical/         # Historical download, storage, verification, plotting
+|-- meteoright/cli/         # One module per subcommand, plus the parser and dispatch
+|-- cli.py                  # Thin shim so `python cli.py` keeps working
+|-- downloader/             # Open-Meteo API clients, normalization, Parquet storage
+|-- historical/             # Historical download planning, storage, normalization
+|-- verification/           # Forecast/observation alignment, provenance, validation
+|-- metrics/                # Metric computation and aggregation
+|-- analysis/               # Anomalies, extremes, degradation, seasonal patterns
+|-- plots/                  # Figure generation
 |-- advanced_verification/  # Event verification, confusion matrices, skill scores
 |-- datasets/               # Curated dataset preparation helpers used by the CLI/tests
-|-- metrics/, plots/        # Top-level analysis helpers used by the current CLI
-|-- showcase/               # Curated publication figures
+|-- data/                   # Loaders for analysis artifacts (generated data ignored by Git)
+|-- src/
+|   |-- forecast/meta_forecasting/  # Adaptive model blending and skill weighting
+|   |-- forecast/verification/      # Alignment, error computation, metric aggregation
+|   |-- forecast/                   # Grid points, HTTP transport, canonical records
+|   |-- core/                       # High-level pipeline helpers
+|   `-- config/                     # Pipeline configuration models
+|-- examples/               # Bundled Copenhagen sample: verification rows and outputs
+|-- showcase/               # Curated publication figures, and the script that builds them
 |-- docs/images/            # Supporting README/documentation figures
-|-- tests/                  # Unit and integration tests
-`-- data/                   # Local generated datasets, ignored by Git
+`-- tests/                  # Unit and integration tests
 ```
 
 ## Data Model
